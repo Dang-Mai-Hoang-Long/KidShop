@@ -41,6 +41,33 @@ CYGWIN* | MINGW*)
   ;;
 esac
 
+# Prefer JDK 25 when available so Maven can compile with --release 25.
+prefer_java_25_home() {
+  for candidate in \
+    "${HOME}/java/current" \
+    "${HOME}"/java/25* \
+    /opt/java/25* \
+    /usr/lib/jvm/java-25* \
+    /usr/lib/jvm/jdk-25* \
+    /usr/lib/jvm/temurin-25*; do
+    if [ -x "$candidate/bin/java" ] && [ -x "$candidate/bin/javac" ]; then
+      JAVA_HOME="$candidate"
+      export JAVA_HOME
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [ -z "${JAVA_HOME-}" ]; then
+  prefer_java_25_home || :
+elif [ -x "$JAVA_HOME/bin/java" ]; then
+  java_major="$($JAVA_HOME/bin/java -version 2>&1 | awk -F[\".] '/version/ {print $2; exit}')"
+  if [ "${java_major:-0}" -lt 25 ] 2>/dev/null; then
+    prefer_java_25_home || :
+  fi
+fi
+
 # set JAVACMD and JAVACCMD
 set_java_home() {
   # For Cygwin and MinGW, ensure paths are in Unix format before anything is touched

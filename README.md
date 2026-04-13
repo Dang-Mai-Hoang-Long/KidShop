@@ -37,7 +37,7 @@ with payment automation, media storage on Cloudflare R2, and business reporting.
 
 ## Tech Stack
 
-- Java 17
+- Java 25
 - Spring Boot 3.x
 - Spring Data JPA + Hibernate
 - Spring Security + OAuth2 Client
@@ -57,9 +57,21 @@ with payment automation, media storage on Cloudflare R2, and business reporting.
 
 ### 1) Prerequisites
 
-- Java 17+
+- Java 25+
 - Maven 3.9+ (or use `./mvnw`)
 - MySQL running locally
+
+If your machine has multiple JDK versions and Maven picks an older one,
+set `JAVA_HOME` to a JDK 25 directory before running commands.
+
+Example (Linux/macOS):
+
+```bash
+export JAVA_HOME="$HOME/java/25.0.1-ms"
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+./mvnw -v
+```
 
 ### 2) Database and app config
 
