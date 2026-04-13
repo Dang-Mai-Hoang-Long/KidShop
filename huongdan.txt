@@ -1,0 +1,8 @@
+cd /workspaces/cache/student-manager && ./mvnw spring-boot:run
+
+nếu bị lỗi permisson denied thì cd tới thẳng folder student-manager rồi chạy lệnh
+chmod +x mvnw && ls -l mvnw
+./mvnw -v
+./mvnw spring-boot:run
+
+sudo service mysql start

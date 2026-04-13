@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header th:fragment="siteHeader" class="site-header sticky-top">
+    <div class="header-top-strip">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+            <p class="mb-0 header-top-copy"><i class="bi bi-truck"></i> Miễn phí vận chuyển cho đơn từ 399.000đ</p>
+            <div class="header-top-links">
+                <a th:href="@{/}">Trang chủ</a>
+                <a th:href="@{/shop}">Cửa hàng</a>
+                <a th:href="@{/orders}" th:if="${currentUser != null}">Đơn hàng</a>
+                <a th:href="@{/profile}" th:if="${currentUser != null}">Tài khoản</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-3">
+        <div class="header-main-row">
+            <a th:href="@{/}" class="brand-link text-decoration-none">
+                <span class="brand-mark">
+                    <img th:if="${siteDisplayLogoPath != null && !siteDisplayLogoPath.isBlank()}" th:src="${siteDisplayLogoPath}" alt="Logo">
+                    <i th:unless="${siteDisplayLogoPath != null && !siteDisplayLogoPath.isBlank()}" class="bi bi-bag-heart-fill"></i>
+                </span>
+                <span class="brand-copy">
+                    <strong th:text="${siteDisplayName}">MiniWear Kids</strong>
+                    <small>Thời trang trẻ em hằng ngày</small>
+                </span>
+            </a>
+
+            <form class="search-form" th:action="@{/shop}" method="get">
+                <i class="bi bi-search"></i>
+                <input type="text" name="keyword" placeholder="Tìm áo quần, váy, phụ kiện cho bé..." th:value="${keyword}">
+                <button type="submit" class="btn btn-main">Tìm</button>
+            </form>
+
+            <div class="header-actions">
+                <th:block th:if="${currentUser != null}">
+                    <a th:href="@{/cart}" class="btn btn-cart-header">
+                        <i class="bi bi-cart3"></i>
+                        <span class="cart-badge" th:if="${cartCount != null && cartCount > 0}" th:text="${cartCount}">0</span>
+                    </a>
+                    <div class="notification-wrapper">
+                        <button class="btn btn-outline-main notification-trigger position-relative" type="button">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="notification-count" th:if="${notificationUnreadCount != null && notificationUnreadCount > 0}" th:text="${notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}">1</span>
+                        </button>
+                        <div class="notification-panel">
+                            <div class="notification-panel-head">
+                                <div>
+                                    <strong>Thông báo gần đây</strong>
+                                    <small th:text="${(notificationUnreadCount != null ? notificationUnreadCount : 0) + ' chưa đọc'}"></small>
+                                </div>
+                                <a class="notification-view-all" th:href="@{/notifications}">Xem tất cả</a>
+                            </div>
+                            <div class="notification-panel-actions">
+                                <form th:action="@{/notifications/mark-all-read}" method="post" class="m-0">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <button type="submit" class="btn btn-sm btn-outline-main">Đọc tất cả</button>
+                                </form>
+                                <form th:action="@{/notifications/delete-all}" method="post" class="m-0" onsubmit="return confirm('Xóa tất cả thông báo?');">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xóa tất cả</button>
+                                </form>
+                            </div>
+                            <form th:action="@{/notifications/delete-selected}" method="post" class="notification-panel-form">
+                                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                <div class="notification-panel-list">
+                                    <div th:if="${recentNotifications == null || recentNotifications.isEmpty()}" class="notification-empty">Không có thông báo mới.</div>
+                                    <label class="notification-panel-item" th:each="notification : ${recentNotifications}" th:classappend="${notification.isUnread()} ? ' unread' : ''">
+                                        <input class="form-check-input notification-checkbox" type="checkbox" name="notificationIds" th:value="${notification.id}">
+                                        <a class="notification-item-link" th:href="@{/notifications/{id}/open(id=${notification.id})}">
+                                            <div class="d-flex justify-content-between gap-2">
+                                                <strong th:text="${notification.title}">Tiêu đề</strong>
+                                                <small class="text-muted" th:text="${notification.formattedTime}">00:00</small>
+                                            </div>
+                                            <div class="notification-item-message" th:text="${notification.message}">Chi tiết</div>
+                                        </a>
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-main w-100 mt-2">Xóa đã chọn</button>
+                            </form>
+                        </div>
+                    </div>
+                    <a th:if="${currentUser.role == 'ADMIN'}" th:href="@{/admin}" class="btn btn-outline-main">Admin</a>
+                    <div class="user-chip"
+                         th:classappend="${currentUser.rank == 'DIAMOND'} ? ' rank-diamond' : (${currentUser.rank == 'GOLD'} ? ' rank-gold' : (${currentUser.rank == 'SILVER'} ? ' rank-silver' : ''))">
+                        <span class="user-chip-avatar">
+                            <img th:if="${currentUser.avatarPath != null}" th:src="${currentUser.avatarPath}" alt="Avatar">
+                            <i th:unless="${currentUser.avatarPath != null}" class="bi bi-person-fill"></i>
+                        </span>
+                        <div class="user-chip-copy">
+                            <small th:text="${'Hạng ' + currentUser.rankLabel}">Hạng Đồng</small>
+                            <a th:href="@{/profile}" th:text="${currentUser.displayName}">Tài khoản</a>
+                        </div>
+                    </div>
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <button type="submit" class="btn btn-ghost-main">Đăng xuất</button>
+                    </form>
+                </th:block>
+
+                <th:block th:unless="${currentUser != null}">
+                    <a th:href="@{/cart}" class="btn btn-cart-header">
+                        <i class="bi bi-cart3"></i>
+                    </a>
+                    <a th:href="@{/login}" class="btn btn-ghost-main">Đăng nhập</a>
+                    <a th:href="@{/signup}" class="btn btn-main">Đăng ký</a>
+                </th:block>
+            </div>
+        </div>
+
+        <button class="btn btn-ghost-main header-toggle-float" type="button" data-header-toggle aria-pressed="false" title="Thu gọn header">
+            <i class="bi bi-arrows-collapse"></i>
+        </button>
+
+        <nav class="header-nav mt-3">
+            <a th:href="@{/shop}">Cửa hàng</a>
+            <a href="#collections">Bộ sưu tập</a>
+            <a href="#best-seller">Bán chạy</a>
+            <a href="#highlights">Lý do chọn shop</a>
+            <a href="#care-guide">Hướng dẫn chọn size</a>
+        </nav>
+    </div>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.querySelector('.site-header');
+            const toggleButton = document.querySelector('[data-header-toggle]');
+            if (!header || !toggleButton) return;
+
+            const storageKey = 'site-header-collapsed';
+            const applyState = (collapsed) => {
+                header.classList.toggle('is-collapsed', collapsed);
+                toggleButton.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+                toggleButton.title = collapsed ? 'Phóng to header' : 'Thu gọn header';
+                toggleButton.innerHTML = collapsed
+                    ? '<i class="bi bi-arrows-expand"></i>'
+                    : '<i class="bi bi-arrows-collapse"></i>';
+            };
+
+            const saved = window.localStorage.getItem(storageKey) === 'true';
+            applyState(saved);
+
+            toggleButton.addEventListener('click', () => {
+                const nextState = !header.classList.contains('is-collapsed');
+                window.localStorage.setItem(storageKey, String(nextState));
+                applyState(nextState);
+            });
+        });
+    </script>
+</header>
+</body>
+</html>

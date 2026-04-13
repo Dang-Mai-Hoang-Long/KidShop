@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Cửa hàng - ' + siteDisplayName}">Cửa hàng - MiniWear Kids</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+</head>
+<body class="home-page">
+<header th:replace="~{fragments/site-header :: siteHeader}"></header>
+
+<main class="pb-5">
+    <div class="container pt-4">
+        <div class="surface-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker"><i class="bi bi-shop"></i> Cửa hàng</div>
+                    <h1 class="section-title mb-0" th:text="${flashSale == true ? 'Flash Sale' : (selectedCategoryName != null ? selectedCategoryName : 'Tất cả sản phẩm')}">Tất cả sản phẩm</h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a th:if="${flashSale == true}" th:href="@{/}" class="btn btn-outline-main">Quay về trang chủ</a>
+                    <span class="section-note" th:if="${productPage != null}" th:text="'Hiển thị ' + ${productPage.totalElements} + ' sản phẩm'">0 sản phẩm</span>
+                </div>
+            </div>
+
+            <div class="shop-categories-row mb-3">
+                <a th:href="@{/shop}" class="shop-cat-chip" th:classappend="${selectedCategoryName == null && keyword == null && flashSale != true} ? ' active' : ''">Tất cả</a>
+                <a th:each="cat : ${categories}" th:href="@{/shop(categoryName=${cat.name})}" class="shop-cat-chip" th:classappend="${selectedCategoryName != null && selectedCategoryName == cat.name} ? ' active' : ''">
+                    <i th:class="'bi ' + ${cat.icon}"></i> <span th:text="${cat.name}">Danh mục</span>
+                </a>
+            </div>
+
+            <div th:if="${flashSale == true}" class="alert alert-info border-0 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span><strong>Đang xem Flash Sale.</strong> Chỉ hiển thị các sản phẩm đang giảm giá.</span>
+                <a th:href="@{/}" class="btn btn-outline-main btn-sm">Về trang chủ</a>
+            </div>
+
+            <div th:if="${selectedCategoryName != null}" class="alert alert-light border mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <span>Đang lọc theo: <strong th:text="${selectedCategoryName}">Danh mục</strong></span>
+                <a th:href="@{/shop}" class="btn btn-outline-main btn-sm">Xóa bộ lọc</a>
+            </div>
+
+            <div th:if="${keyword != null && !keyword.isEmpty()}" class="mb-3">
+                <span class="text-muted">Kết quả tìm kiếm cho: </span><strong th:text="${keyword}">keyword</strong>
+                <a th:href="@{/shop}" class="ms-2 text-decoration-none"><i class="bi bi-x-circle"></i> Xóa bộ lọc</a>
+            </div>
+
+            <div class="product-grid" th:if="${productPage != null && productPage.totalElements > 0}">
+                <article class="product-card" th:each="product : ${productPage.content}">
+                    <a th:href="@{/product/{id}(id=${product.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                            <span class="product-discount" th:if="${product.activeDiscountPercent > 0}" th:text="'-' + ${product.activeDiscountPercent} + '%'">-20%</span>
+                            <span class="product-badge-sold" th:text="'Đã bán ' + ${product.soldCount}">Đã bán 0</span>
+                        </div>
+                    </a>
+                    <div class="product-body">
+                        <a th:href="@{/product/{id}(id=${product.id})}" class="product-name-link">
+                            <h6 class="product-name" th:text="${product.name}">Tên sản phẩm</h6>
+                        </a>
+                        <p class="product-desc" th:text="${product.description}">Mô tả</p>
+                        <div class="product-age" th:if="${product.ageRange != null}">
+                            <i class="bi bi-person-hearts"></i> <span th:text="${product.ageRange}">1-5 tuổi</span>
+                        </div>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price-group">
+                            <strong class="product-price" th:text="${product.formattedActivePrice}">159.000đ</strong>
+                            <del class="product-original-price" th:if="${product.isFlashSaleActive() && product.formattedPrice != product.formattedActivePrice}" th:text="${product.formattedPrice}">219.000đ</del>
+                            <del class="product-original-price" th:if="${!product.isFlashSaleActive() && product.formattedOriginalPrice != null}" th:text="${product.formattedOriginalPrice}">219.000đ</del>
+                        </div>
+                        <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="m-0 add-to-cart-form">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <button type="submit" class="btn btn-main btn-sm add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus"></i> Thêm</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+
+            <div th:if="${productPage == null || productPage.totalElements == 0}" class="text-center py-5">
+                <i class="bi bi-emoji-frown" style="font-size:3rem;color:#ccc;"></i>
+                <p class="mt-2 text-muted">Không tìm thấy sản phẩm nào.</p>
+                <a th:href="@{/shop}" class="btn btn-outline-main">Xem tất cả sản phẩm</a>
+            </div>
+
+            <nav th:if="${productPage != null && productPage.totalPages > 1}" class="mt-4">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${productPage.first} ? ' disabled' : ''" th:if="${flashSale != true && selectedCategoryName == null}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number - 1},keyword=${keyword})}">Trước</a>
+                    </li>
+                    <li class="page-item" th:classappend="${productPage.first} ? ' disabled' : ''" th:if="${flashSale != true && selectedCategoryName != null}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number - 1},categoryName=${selectedCategoryName})}">Trước</a>
+                    </li>
+                    <li class="page-item" th:classappend="${productPage.first} ? ' disabled' : ''" th:if="${flashSale == true}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number - 1},flashSale=true)}">Trước</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link" th:text="${productPage.number + 1 + ' / ' + productPage.totalPages}">1 / 1</span>
+                    </li>
+                    <li class="page-item" th:classappend="${productPage.last} ? ' disabled' : ''" th:if="${flashSale != true && selectedCategoryName == null}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number + 1},keyword=${keyword})}">Sau</a>
+                    </li>
+                    <li class="page-item" th:classappend="${productPage.last} ? ' disabled' : ''" th:if="${flashSale != true && selectedCategoryName != null}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number + 1},categoryName=${selectedCategoryName})}">Sau</a>
+                    </li>
+                    <li class="page-item" th:classappend="${productPage.last} ? ' disabled' : ''" th:if="${flashSale == true}">
+                        <a class="page-link" th:href="@{/shop(page=${productPage.number + 1},flashSale=true)}">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/site-footer :: siteFooter}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/cart-ui.js}"></script>
+</body>
+</html>

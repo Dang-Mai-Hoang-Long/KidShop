@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Không tìm thấy trang</title>
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/error-page.css}">
+</head>
+<body class="error-page">
+<main class="error-wrap">
+    <section class="error-card" role="alert" aria-live="polite">
+        <p class="error-code">404</p>
+        <h1>Trang bạn tìm không tồn tại</h1>
+        <p class="error-message">
+            Đường dẫn có thể đã thay đổi hoặc nội dung đã bị gỡ.
+            Bạn có thể quay về trang chủ hoặc tiếp tục mua sắm.
+        </p>
+        <div class="error-actions">
+            <a th:href="@{/}" class="btn btn-main">Về trang chủ</a>
+            <a th:href="@{/shop}" class="btn btn-outline-main">Đi đến cửa hàng</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

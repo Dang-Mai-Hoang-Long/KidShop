@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name + ' - ' + siteDisplayName}">Sản phẩm - MiniWear Kids</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+</head>
+<body class="home-page">
+<header th:replace="~{fragments/site-header :: siteHeader}"></header>
+
+<main class="pb-5">
+    <div class="container pt-4">
+        <nav class="mb-3" style="font-size:.9rem;font-weight:700;">
+            <a th:href="@{/}" class="text-decoration-none" style="color:#6f7a86;">Trang chủ</a>
+            <span class="mx-1" style="color:#ccc;">/</span>
+            <a th:href="@{/shop}" class="text-decoration-none" style="color:#6f7a86;">Cửa hàng</a>
+            <span class="mx-1" style="color:#ccc;">/</span>
+            <span style="color:#1f3041;" th:text="${product.name}">Sản phẩm</span>
+        </nav>
+
+        <div class="surface-card p-4">
+            <div class="product-detail-layout">
+                <div class="product-detail-gallery">
+                    <img class="product-detail-main-img" th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                    <div class="product-detail-thumbs" th:if="${product.imagePath2 != null || product.imagePath3 != null}">
+                        <img th:if="${product.imagePath}" th:src="${product.imagePath}" alt="Ảnh 1" class="active">
+                        <img th:if="${product.imagePath2}" th:src="${product.imagePath2}" alt="Ảnh 2">
+                        <img th:if="${product.imagePath3}" th:src="${product.imagePath3}" alt="Ảnh 3">
+                    </div>
+                </div>
+
+                <div class="product-detail-info">
+                    <div class="product-detail-category" th:if="${product.category != null}">
+                        <i th:class="'bi ' + ${product.category.icon}"></i>
+                        <span th:text="${product.category.name}">Danh mục</span>
+                    </div>
+
+                    <h1 class="product-detail-name" th:text="${product.name}">Tên sản phẩm</h1>
+
+                    <div class="product-detail-meta">
+                        <span><i class="bi bi-fire"></i> Đã bán <strong th:text="${product.soldCount}">0</strong></span>
+                        <span th:if="${product.ageRange != null}"><i class="bi bi-person-hearts"></i> <span th:text="${product.ageRange}">1-5 tuổi</span></span>
+                        <span th:if="${product.stock > 0}" class="in-stock"><i class="bi bi-check-circle-fill"></i> Còn hàng</span>
+                        <span th:unless="${product.stock > 0}" class="out-of-stock"><i class="bi bi-x-circle-fill"></i> Hết hàng</span>
+                    </div>
+
+                    <div class="product-detail-price-box">
+                        <strong class="product-detail-price" th:text="${product.formattedActivePrice}">159.000đ</strong>
+                        <del th:if="${product.isFlashSaleActive() && product.formattedPrice != product.formattedActivePrice}" class="product-detail-original" th:text="${product.formattedPrice}">219.000đ</del>
+                        <del th:if="${!product.isFlashSaleActive() && product.formattedOriginalPrice != null}" class="product-detail-original" th:text="${product.formattedOriginalPrice}">219.000đ</del>
+                        <span th:if="${product.activeDiscountPercent > 0}" class="product-detail-discount" th:text="'-' + ${product.activeDiscountPercent} + '%'">-20%</span>
+                    </div>
+
+                    <p class="product-detail-desc" th:text="${product.description}">Mô tả sản phẩm</p>
+
+                    <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="product-detail-form add-to-cart-form" th:if="${product.stock > 0}">
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+
+                        <div th:if="${product.sizes != null && !product.sizes.isEmpty()}" class="product-detail-sizes">
+                            <label class="form-label fw-bold">Chọn size:</label>
+                            <div class="size-options">
+                                <th:block th:each="s,stat : ${product.sizes.split(',')}">
+                                    <label class="size-option">
+                                        <input type="radio" name="size" th:value="${s.trim()}" th:checked="${stat.index == 0}">
+                                        <span th:text="${s.trim()}">M</span>
+                                    </label>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <div class="product-detail-qty">
+                            <label class="form-label fw-bold">Số lượng:</label>
+                            <input type="number" name="quantity" class="form-control" value="1" min="1" th:max="${product.stock}" style="width:100px;">
+                        </div>
+
+                        <button type="submit" class="btn btn-main btn-lg w-100 mt-3 add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ hàng</button>
+                    </form>
+
+                    <div th:unless="${product.stock > 0}" class="mt-3">
+                        <button class="btn btn-secondary btn-lg w-100" disabled>Hết hàng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="surface-card p-4 mt-4" th:if="${relatedProducts != null && !relatedProducts.isEmpty()}">
+            <div class="section-kicker mb-2">Sản phẩm liên quan</div>
+            <h2 class="section-title mb-3">Có thể bạn cũng thích</h2>
+            <div class="product-grid">
+                <article class="product-card" th:each="rp : ${relatedProducts}" th:if="${rp.id != product.id}">
+                    <a th:href="@{/product/{id}(id=${rp.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${rp.imagePath != null ? rp.imagePath : '/assets/sales/sale1.webp'}" th:alt="${rp.name}">
+                        </div>
+                    </a>
+                    <div class="product-body">
+                        <a th:href="@{/product/{id}(id=${rp.id})}" class="product-name-link">
+                            <h6 class="product-name" th:text="${rp.name}">Tên</h6>
+                        </a>
+                    </div>
+                    <div class="product-footer">
+                        <strong class="product-price" th:text="${rp.formattedActivePrice}">0đ</strong>
+                        <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="m-0 add-to-cart-form">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" name="productId" th:value="${rp.id}">
+                            <button type="submit" class="btn btn-main btn-sm add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus"></i></button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/site-footer :: siteFooter}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/cart-ui.js}"></script>
+</body>
+</html>

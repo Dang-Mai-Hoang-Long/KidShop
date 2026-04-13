@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Hồ sơ - ' + siteDisplayName}">Hồ sơ - MiniWear Kids</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/profile.css}">
+</head>
+<body class="profile-page">
+<header th:replace="~{fragments/site-header :: siteHeader}"></header>
+
+<main class="profile-main-wrap pb-5">
+    <div class="container py-4">
+        <div th:if="${profileSuccess}" class="alert alert-success" th:text="${profileSuccess}"></div>
+        <div th:if="${profileError}" class="alert alert-danger" th:text="${profileError}"></div>
+
+        <div class="profile-layout">
+            <aside class="profile-sidebar">
+                <div class="profile-side-card">
+                    <div class="profile-user">
+                        <span class="profile-user-avatar">
+                            <img th:if="${profileUser.avatarPath != null}" th:src="${profileUser.avatarPath}" alt="Avatar">
+                            <i th:unless="${profileUser.avatarPath != null}" class="bi bi-person-fill"></i>
+                        </span>
+                        <div>
+                            <strong th:text="${profileUser.account}">username</strong>
+                            <small th:text="${profileUser.role}">USER</small>
+                        </div>
+                    </div>
+
+                    <nav class="profile-nav" id="profileNav">
+                        <button type="button" class="active" data-panel="profile-panel">Hồ sơ của tôi</button>
+                        <button type="button" data-panel="account-settings-panel">Tổng quan tài khoản</button>
+                        <button type="button" data-panel="orders-panel">Đơn mua</button>
+                        <button type="button" data-panel="vouchers-panel">Kho voucher</button>
+                        <button type="button" data-panel="notification-settings-panel">Thông báo</button>
+                        <button type="button" data-panel="bank-panel">Ngân hàng</button>
+                        <button type="button" data-panel="address-panel">Địa chỉ</button>
+                        <button type="button" data-panel="password-panel">Đổi mật khẩu</button>
+                        <button type="button" data-panel="preferences-panel">Tùy chỉnh</button>
+                        <button type="button" data-panel="profile-panel">Thông tin cá nhân</button>
+                    </nav>
+
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <button type="submit" class="btn btn-ghost-main w-100">Đăng xuất</button>
+                    </form>
+                </div>
+            </aside>
+
+            <section class="profile-content">
+                <div class="profile-panel active" id="profile-panel" data-panel-target="my-info">
+                    <span id="my-info"></span>
+                    <div class="panel-head">
+                        <h1>Thông tin hồ sơ</h1>
+                        <p>Cập nhật thông tin liên hệ và ảnh đại diện.</p>
+                    </div>
+
+                    <form id="profileForm" th:action="@{/profile}" th:object="${profileForm}" method="post" enctype="multipart/form-data" class="profile-form-grid">
+                        <div th:if="${#fields.hasAnyErrors()}" class="alert alert-warning">Vui lòng kiểm tra lại các trường đang báo lỗi trước khi lưu.</div>
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <input type="hidden" th:field="*{id}">
+                        <input id="avatarFile" type="file" class="d-none" th:field="*{avatarFile}" accept="image/*">
+
+                        <div class="profile-avatar-box">
+                            <div class="profile-avatar-preview">
+                                <img id="avatarPreview" th:src="${profileUser.avatarPath != null ? profileUser.avatarPath : ''}" alt="Ảnh đại diện" th:classappend="${profileUser.avatarPath != null ? '' : 'd-none'}">
+                                <i id="avatarPreviewIcon" class="bi bi-person-fill" th:classappend="${profileUser.avatarPath != null ? 'd-none' : ''}"></i>
+                            </div>
+                            <label for="avatarFile" class="btn btn-outline-main">Chọn ảnh</label>
+                            <small>Hỗ trợ JPG/PNG</small>
+                        </div>
+
+                        <div class="profile-fields">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Tên đăng nhập</label>
+                                    <input type="text" class="form-control" th:classappend="${#fields.hasErrors('account')} ? 'is-invalid' : ''" th:field="*{account}" readonly>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('account')}" th:errors="*{account}"></div>
+                                    <small class="text-muted">Tên đăng nhập không thể thay đổi.</small>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" th:field="*{email}" readonly>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                    <small class="text-muted">Email đăng nhập không thể thay đổi tại đây.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Họ (tên đệm)</label>
+                                    <input type="text" class="form-control" th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid' : ''" th:field="*{lastName}">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tên</label>
+                                    <input type="text" class="form-control" th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid' : ''" th:field="*{firstName}">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Số điện thoại</label>
+                                    <input type="text" class="form-control" th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''" th:field="*{phoneNumber}">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ngày sinh</label>
+                                    <input type="date" class="form-control" th:classappend="${#fields.hasErrors('birthDate')} ? 'is-invalid' : ''" th:field="*{birthDate}">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Giới tính</label>
+                                    <div class="gender-row" th:classappend="${#fields.hasErrors('gender')} ? 'is-invalid' : ''">
+                                        <label><input type="radio" th:field="*{gender}" value="MALE"> Nam</label>
+                                        <label><input type="radio" th:field="*{gender}" value="FEMALE"> Nữ</label>
+                                        <label><input type="radio" th:field="*{gender}" value="OTHER"> Khác</label>
+                                    </div>
+                                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Địa chỉ</label>
+                                    <textarea rows="2" class="form-control" th:classappend="${#fields.hasErrors('address')} ? 'is-invalid' : ''" th:field="*{address}"></textarea>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-main mt-3">Lưu thông tin</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="profile-panel" id="account-settings-panel">
+                    <div class="mini-surface">
+                        <h3>Tổng quan tài khoản</h3>
+                        <div class="summary-grid">
+                            <div><small>Vai trò</small><strong th:text="${profileUser.role}">USER</strong></div>
+                            <div>
+                                <small>Hạng hiện tại</small>
+                                <strong class="rank-pill" th:classappend="${rankProgress != null ? rankProgress.currentRankClass : 'rank-bronze'}" th:text="${rankProgress != null ? rankProgress.currentRankLabel : profileUser.rankLabel}">Đồng</strong>
+                            </div>
+                            <div><small>Email</small><strong th:text="${profileUser.email}">email</strong></div>
+                            <div><small>Số điện thoại</small><strong th:text="${profileUser.phoneNumber}">phone</strong></div>
+                            <div>
+                                <small>Trạng thái Gmail</small>
+                                <strong th:text="${profileUser.gmailStatusLabel}"
+                                        th:classappend="${profileUser.gmailVerified} ? ' text-success' : ' text-warning'">Chưa xác minh</strong>
+                            </div>
+                            <div><small>Đã mua (đơn đã giao)</small><strong th:text="${rankProgress != null ? rankProgress.deliveredSpendFormatted : '0đ'}">0đ</strong></div>
+                            <div>
+                                <small>Cần mua thêm để lên hạng</small>
+                                <strong th:text="${rankProgress != null ? (rankProgress.topTier ? '0đ' : rankProgress.remainingToNextFormatted) : '0đ'}">0đ</strong>
+                            </div>
+                            <div>
+                                <small>Hạng kế tiếp</small>
+                                <strong class="rank-pill" th:if="${rankProgress != null && !rankProgress.topTier}" th:classappend="${rankProgress.nextRankClass}" th:text="${rankProgress.nextRankLabel}">Bạc</strong>
+                                <strong th:if="${rankProgress == null || rankProgress.topTier}">Đã đạt cao nhất</strong>
+                            </div>
+                            <div><small>Trạng thái</small><strong th:text="${profileUser.enabled ? 'Đang hoạt động' : 'Đã khóa'}">Đang hoạt động</strong></div>
+                        </div>
+
+                        <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                            <form th:if="${!profileUser.gmailVerified}" th:action="@{/profile/gmail/activate}" method="post" class="m-0">
+                                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                <button type="submit" class="btn btn-outline-main btn-sm">
+                                    <i class="bi bi-google me-1"></i> Kích hoạt Gmail
+                                </button>
+                            </form>
+                            <span th:if="${profileUser.gmailVerified}" class="badge text-bg-success">Gmail đã xác minh</span>
+                            <small class="text-muted">Dùng Gmail để đăng nhập nhanh và bảo mật hơn.</small>
+                        </div>
+
+                        <div class="rank-progress-wrap" th:if="${rankProgress != null}">
+                            <div class="rank-progress-head">
+                                <span>Tiến độ lên hạng</span>
+                                <strong th:text="${rankProgress.progressPercent + '%'}">0%</strong>
+                            </div>
+                            <div class="rank-progress-track">
+                                <div class="rank-progress-fill" th:classappend="${rankProgress.currentRankClass}" th:style="'width:' + ${rankProgress.progressPercent} + '%'"></div>
+                            </div>
+                        </div>
+
+                        <div class="rank-tier-list mt-3">
+                            <span class="rank-tier rank-bronze" th:classappend="${rankProgress != null && rankProgress.currentRank == 'BRONZE'} ? ' current' : ''">Đồng - 1.000.000đ</span>
+                            <span class="rank-tier rank-silver" th:classappend="${rankProgress != null && rankProgress.currentRank == 'SILVER'} ? ' current' : ''">Bạc - 3.000.000đ</span>
+                            <span class="rank-tier rank-gold" th:classappend="${rankProgress != null && rankProgress.currentRank == 'GOLD'} ? ' current' : ''">Vàng - 5.000.000đ</span>
+                            <span class="rank-tier rank-diamond" th:classappend="${rankProgress != null && rankProgress.currentRank == 'DIAMOND'} ? ' current' : ''">Kim cương - 10.000.000đ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="orders-panel">
+                    <span id="orders"></span>
+                    <div class="mini-surface">
+                        <h3>Lịch sử đơn mua</h3>
+                        <p class="mb-3">Theo dõi tiến trình đơn hàng gần đây của bạn.</p>
+
+                        <div th:if="${recentOrders == null || #lists.isEmpty(recentOrders)}" class="text-muted">
+                            Bạn chưa có đơn hàng nào.
+                        </div>
+
+                        <div class="profile-orders-list" th:unless="${recentOrders == null || #lists.isEmpty(recentOrders)}">
+                            <article class="profile-order-card" th:each="order : ${recentOrders}">
+                                <div class="profile-order-head">
+                                    <div>
+                                        <strong th:text="${order.orderCode}">MWK0001</strong>
+                                        <small th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</small>
+                                    </div>
+                                    <span class="badge rounded-pill" th:classappend="'text-bg-' + ${order.statusColor}" th:text="${order.statusLabel}">Chờ xác nhận</span>
+                                </div>
+                                <div class="profile-order-meta">
+                                    <span><i class="bi bi-box-seam"></i> <strong th:text="${#lists.size(order.items)}">1</strong> sản phẩm</span>
+                                    <span><i class="bi bi-cash-coin"></i> <strong th:text="${order.formattedTotal}">0đ</strong></span>
+                                </div>
+                                <a class="btn btn-outline-main btn-sm" th:href="@{/orders/{id}(id=${order.id})}">Xem chi tiết</a>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="vouchers-panel">
+                    <div class="mini-surface">
+                        <h3>Kho voucher</h3>
+                        <p>Voucher của bạn sẽ hiển thị tại đây khi có dữ liệu.</p>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="notification-settings-panel">
+                    <div class="mini-surface">
+                        <h3>Cài đặt thông báo</h3>
+                        <div class="option-list">
+                            <label><input type="checkbox" checked> Nhận thông báo đơn hàng</label>
+                            <label><input type="checkbox"> Nhận ưu đãi sản phẩm</label>
+                            <label><input type="checkbox" checked> Nhận thông báo cập nhật từ shop</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="bank-panel">
+                    <div class="mini-surface">
+                        <h3>Thông tin ngân hàng</h3>
+                        <p>Chưa liên kết tài khoản ngân hàng.</p>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="address-panel">
+                    <div th:if="${addressFormError}" class="alert alert-warning" th:text="${addressFormError}"></div>
+                    <div class="mini-surface mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div>
+                                <h3 class="mb-1">Sổ địa chỉ giao hàng</h3>
+                                <p class="mb-0">Lưu nhiều địa chỉ và chọn địa chỉ mặc định cho checkout.</p>
+                            </div>
+                            <a th:href="@{/checkout}" class="btn btn-outline-main btn-sm">Đi đến checkout</a>
+                        </div>
+
+                        <div class="address-list mb-4">
+                            <div th:if="${#lists.isEmpty(shippingAddresses)}" class="text-muted">Chưa có địa chỉ giao hàng nào. Hãy thêm địa chỉ đầu tiên.</div>
+                            <div th:each="address : ${shippingAddresses}" class="border rounded-3 p-3 mb-2 bg-white">
+                                <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <strong th:text="${address.label != null && !address.label.isBlank() ? address.label : 'Địa chỉ giao hàng'}">Địa chỉ</strong>
+                                            <span th:if="${address.defaultAddress}" class="badge text-bg-success">Mặc định</span>
+                                        </div>
+                                        <div class="text-muted small" th:text="${address.recipientName + ' | ' + address.recipientPhone}">Tên | SĐT</div>
+                                        <div class="small" th:text="${address.addressLine}">Địa chỉ</div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                th:attr="data-address-id=${address.id},data-address-label=${address.label},data-address-recipient-name=${address.recipientName},data-address-recipient-phone=${address.recipientPhone},data-address-line=${address.addressLine},data-address-default=${address.defaultAddress}"
+                                                onclick="fillShippingAddressForm(this)">Sửa</button>
+                                        <form th:if="${!address.defaultAddress}" th:action="@{/profile/shipping-addresses/default}" method="post" class="m-0">
+                                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                            <input type="hidden" name="addressId" th:value="${address.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Đặt mặc định</button>
+                                        </form>
+                                        <form th:action="@{/profile/shipping-addresses/delete}" method="post" class="m-0" onsubmit="return confirm('Xóa địa chỉ giao hàng này?');">
+                                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                            <input type="hidden" name="addressId" th:value="${address.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form th:action="@{/profile/shipping-addresses/save}" th:object="${shippingAddressForm}" method="post" class="row g-3">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" th:field="*{id}" id="shippingAddressId">
+                            <div class="col-md-4">
+                                <label class="form-label">Nhãn địa chỉ</label>
+                                <input type="text" class="form-control" th:classappend="${#fields.hasErrors('label')} ? 'is-invalid' : ''" th:field="*{label}" id="shippingAddressLabel" placeholder="Nhà riêng, Cơ quan...">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('label')}" th:errors="*{label}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tên người nhận</label>
+                                <input type="text" class="form-control" th:classappend="${#fields.hasErrors('recipientName')} ? 'is-invalid' : ''" th:field="*{recipientName}" id="shippingAddressRecipientName">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" th:classappend="${#fields.hasErrors('recipientPhone')} ? 'is-invalid' : ''" th:field="*{recipientPhone}" id="shippingAddressRecipientPhone">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('recipientPhone')}" th:errors="*{recipientPhone}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Địa chỉ giao hàng</label>
+                                <textarea rows="3" class="form-control" th:classappend="${#fields.hasErrors('addressLine')} ? 'is-invalid' : ''" th:field="*{addressLine}" id="shippingAddressLine" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành..."></textarea>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}"></div>
+                            </div>
+                            <div class="col-12 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <label class="d-flex align-items-center gap-2 m-0">
+                                    <input type="checkbox" th:field="*{defaultAddress}" id="shippingAddressDefault">
+                                    <span>Đặt làm địa chỉ mặc định</span>
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetShippingAddressForm()">Làm mới</button>
+                                    <button type="submit" class="btn btn-main">Lưu địa chỉ</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="password-panel">
+                    <div class="mini-surface">
+                        <h3>Đổi mật khẩu</h3>
+                        <p>Vì lý do bảo mật, hãy nhập mật khẩu hiện tại trước khi đặt mật khẩu mới.</p>
+
+                        <form th:action="@{/profile/password}" th:object="${passwordForm}" method="post" class="password-form mt-3">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <div th:if="${#fields.hasAnyErrors()}" class="alert alert-warning mb-3">Vui lòng kiểm tra lại thông tin mật khẩu.</div>
+
+                            <div class="password-form-grid">
+                                <div>
+                                    <label class="form-label">Mật khẩu hiện tại</label>
+                                    <input type="password" class="form-control" th:classappend="${#fields.hasErrors('currentPassword')} ? 'is-invalid' : ''" th:field="*{currentPassword}" autocomplete="current-password" placeholder="Nhập mật khẩu hiện tại">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Mật khẩu mới</label>
+                                    <input type="password" class="form-control" th:classappend="${#fields.hasErrors('newPassword')} ? 'is-invalid' : ''" th:field="*{newPassword}" autocomplete="new-password" placeholder="Ít nhất 8 ký tự">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Xác nhận mật khẩu mới</label>
+                                    <input type="password" class="form-control" th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''" th:field="*{confirmPassword}" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-main mt-3">Cập nhật mật khẩu</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="preferences-panel">
+                    <div class="mini-surface">
+                        <h3>Tùy chỉnh riêng</h3>
+                        <p>Tùy chỉnh trải nghiệm, nguyên tắc hiển thị và ưu tiên thông báo.</p>
+                    </div>
+                </div>
+
+                <div class="profile-panel" id="personal-info-panel">
+                    <div class="mini-surface">
+                        <h3>Thông tin cá nhân</h3>
+                        <p>Toàn bộ thông tin cơ bản đang được quản lý tại tab Hồ sơ của tôi.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/site-footer :: siteFooter}"></footer>
+
+<script th:inline="javascript">
+    const profileForm = document.getElementById('profileForm');
+    const avatarFileInput = document.getElementById('avatarFile');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const avatarPreviewIcon = document.getElementById('avatarPreviewIcon');
+
+    if (avatarFileInput) {
+        avatarFileInput.addEventListener('change', () => {
+            const file = avatarFileInput.files && avatarFileInput.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (avatarPreview) {
+                    avatarPreview.src = event.target.result;
+                    avatarPreview.classList.remove('d-none');
+                }
+
+                if (avatarPreviewIcon) {
+                    avatarPreviewIcon.classList.add('d-none');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const shippingAddressFormFields = {
+        id: document.getElementById('shippingAddressId'),
+        label: document.getElementById('shippingAddressLabel'),
+        recipientName: document.getElementById('shippingAddressRecipientName'),
+        recipientPhone: document.getElementById('shippingAddressRecipientPhone'),
+        addressLine: document.getElementById('shippingAddressLine'),
+        defaultAddress: document.getElementById('shippingAddressDefault')
+    };
+
+    function resetShippingAddressForm() {
+        Object.values(shippingAddressFormFields).forEach((field) => {
+            if (!field) {
+                return;
+            }
+
+            if (field.type === 'checkbox') {
+                field.checked = true;
+            } else {
+                field.value = '';
+            }
+        });
+        if (shippingAddressFormFields.defaultAddress) {
+            shippingAddressFormFields.defaultAddress.checked = true;
+        }
+    }
+
+    function fillShippingAddressForm(button) {
+        if (!button) {
+            return;
+        }
+
+        shippingAddressFormFields.id.value = button.dataset.addressId || '';
+        shippingAddressFormFields.label.value = button.dataset.addressLabel || '';
+        shippingAddressFormFields.recipientName.value = button.dataset.addressRecipientName || '';
+        shippingAddressFormFields.recipientPhone.value = button.dataset.addressRecipientPhone || '';
+        shippingAddressFormFields.addressLine.value = button.dataset.addressLine || '';
+        shippingAddressFormFields.defaultAddress.checked = button.dataset.addressDefault === 'true';
+        document.getElementById('address-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    window.fillShippingAddressForm = fillShippingAddressForm;
+    window.resetShippingAddressForm = resetShippingAddressForm;
+
+    const navButtons = document.querySelectorAll('[data-panel]');
+    const panels = document.querySelectorAll('.profile-panel');
+
+    function activatePanel(panelId) {
+        panels.forEach((panel) => {
+            panel.classList.toggle('active', panel.id === panelId);
+        });
+
+        navButtons.forEach((button) => {
+            button.classList.toggle('active', button.dataset.panel === panelId);
+        });
+    }
+
+    navButtons.forEach((button) => {
+        button.addEventListener('click', () => activatePanel(button.dataset.panel));
+    });
+
+    const serverActivePanel = /*[[${activePanel}]]*/ null;
+    const hashPanel = window.location.hash ? window.location.hash.substring(1) : null;
+    const initialPanel = serverActivePanel || hashPanel || 'profile-panel';
+    activatePanel(document.getElementById(initialPanel) ? initialPanel : 'profile-panel');
+</script>
+</body>
+</html>

@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Quản trị - ' + siteDisplayName}">Quản trị - MiniWear Kids</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-page">
+<header th:replace="~{fragments/site-header :: siteHeader}"></header>
+
+<main class="pb-5">
+    <div class="container py-4 admin-shell">
+        <section class="admin-hero">
+            <div>
+                <span class="admin-kicker">Quản trị hệ thống</span>
+                <h1 th:text="${'Bảng điều khiển ' + siteDisplayName}">Bảng điều khiển MiniWear Kids</h1>
+                <p>Quản lý người dùng, sản phẩm, danh mục và đơn hàng.</p>
+            </div>
+            <div class="admin-hero-actions">
+                <a th:href="@{/}" class="btn btn-outline-main">Trang chủ</a>
+                <form th:action="@{/logout}" method="post" class="m-0">
+                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                    <button type="submit" class="btn btn-main">Đăng xuất</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="admin-stats mt-3">
+            <div class="stat-card stat-users"><i class="bi bi-people-fill"></i><div><small>Người dùng</small><strong th:text="${totalUsers}">0</strong></div></div>
+            <div class="stat-card stat-pending"><i class="bi bi-envelope-check-fill"></i><div><small>Gmail đã xác minh</small><strong th:text="${verifiedGmailUsers}">0</strong></div></div>
+            <div class="stat-card stat-products"><i class="bi bi-box-seam-fill"></i><div><small>Sản phẩm</small><strong th:text="${totalProducts}">0</strong></div></div>
+            <div class="stat-card stat-orders"><i class="bi bi-receipt-cutoff"></i><div><small>Đơn hàng</small><strong th:text="${totalOrders}">0</strong></div></div>
+            <div class="stat-card stat-pending"><i class="bi bi-hourglass-split"></i><div><small>Chờ xử lý</small><strong th:text="${pendingOrders}">0</strong></div></div>
+            <div class="stat-card stat-revenue"><i class="bi bi-cash-coin"></i><div><small>Doanh thu</small><strong th:text="${totalRevenue}">0đ</strong></div></div>
+        </section>
+
+        <section class="admin-tabs mt-3">
+            <a th:href="@{/admin(tab='users')}" class="admin-tab" th:classappend="${activeTab == 'users'} ? ' active' : ''"><i class="bi bi-people"></i> Người dùng</a>
+            <a th:href="@{/admin(tab='categories')}" class="admin-tab" th:classappend="${activeTab == 'categories'} ? ' active' : ''"><i class="bi bi-tags"></i> Danh mục</a>
+            <a th:href="@{/admin(tab='products')}" class="admin-tab" th:classappend="${activeTab == 'products'} ? ' active' : ''"><i class="bi bi-box-seam"></i> Sản phẩm</a>
+            <a th:href="@{/admin(tab='orders')}" class="admin-tab" th:classappend="${activeTab == 'orders'} ? ' active' : ''"><i class="bi bi-receipt"></i> Đơn hàng</a>
+            <a th:href="@{/admin(tab='stats')}" class="admin-tab" th:classappend="${activeTab == 'stats'} ? ' active' : ''"><i class="bi bi-bar-chart-line"></i> Thống kê</a>
+            <a th:href="@{/admin(tab='audit')}" class="admin-tab" th:classappend="${activeTab == 'audit'} ? ' active' : ''"><i class="bi bi-journal-text"></i> Nhật ký</a>
+        </section>
+
+        <div class="admin-flash-banner mt-3" th:if="${adminSuccess != null || adminError != null}">
+            <div th:if="${adminSuccess}" class="alert alert-success mb-2 admin-flash-message" th:text="${adminSuccess}"></div>
+            <div th:if="${adminError}" class="alert alert-danger mb-0 admin-flash-message" th:text="${adminError}"></div>
+        </div>
+
+        <section th:if="${activeTab == 'users'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>Quản lý người dùng</h2>
+                    <p class="mb-0">Lọc theo tài khoản, tên, email, trạng thái khóa và xác minh Gmail. Có thể đặt tổng tiền đã mua cho từng user.</p>
+                </div>
+            </div>
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form live-admin-filter" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="users">
+                    <input type="hidden" name="page" value="0">
+                    <div>
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" name="userKeyword" class="form-control" placeholder="Tài khoản, tên, email, SĐT..." th:value="${userKeyword}">
+                    </div>
+                    <div>
+                        <label class="form-label">Trạng thái</label>
+                        <select name="userStatus" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="active" th:selected="${userStatus == 'active'}">Hoạt động</option>
+                            <option value="locked" th:selected="${userStatus == 'locked'}">Đã khóa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Xác minh Gmail</label>
+                        <select name="userGmailVerified" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="verified" th:selected="${userGmailVerified == 'verified'}">Đã xác minh</option>
+                            <option value="unverified" th:selected="${userGmailVerified == 'unverified'}">Chưa xác minh</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Số dòng</label>
+                        <select name="size" class="form-select">
+                            <option value="10" th:selected="${pageSize == 10}">10</option>
+                            <option value="20" th:selected="${pageSize == 20}">20</option>
+                            <option value="50" th:selected="${pageSize == 50}">50</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-main w-100">Áp dụng</button>
+                    </div>
+                </form>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle admin-table">
+                    <thead>
+                    <tr><th>ID</th><th>Tài khoản</th><th>Họ tên</th><th>Email</th><th>SĐT</th><th>Gmail</th><th>Tổng đã mua</th><th>Trạng thái</th><th>Hành động</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${userPage == null || userPage.totalElements == 0}"><td colspan="9" class="text-center text-muted py-4">Không có tài khoản.</td></tr>
+                    <tr th:each="user : ${userPage.content}">
+                        <td th:text="${user.id}">1</td>
+                        <td><strong th:text="${user.account}">account</strong><div class="text-muted small" th:text="${user.role}">USER</div></td>
+                        <td th:text="${user.firstName + ' ' + user.lastName}">Họ tên</td>
+                        <td th:text="${user.email}">email</td>
+                        <td th:text="${user.phoneNumber}">phone</td>
+                        <td>
+                            <span class="badge rounded-pill" th:classappend="${user.gmailVerified} ? ' text-bg-primary' : ' text-bg-secondary'" th:text="${user.gmailStatusLabel}">Đã xác minh</span>
+                            <div class="text-muted small" th:if="${user.gmailVerifiedAt != null}" th:text="${#temporals.format(user.gmailVerifiedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 08:00</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold" th:text="${userTotalSpentMap != null && userTotalSpentMap[user.id] != null ? userTotalSpentMap[user.id] : '0đ'}">0đ</div>
+                            <form th:action="@{/admin/users/set-total-spend}" method="post" class="mt-2 d-inline-flex gap-2 align-items-center flex-wrap">
+                                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                <input type="hidden" name="userId" th:value="${user.id}">
+                                <input type="hidden" name="page" th:value="${userPage.number}">
+                                <input type="hidden" name="size" th:value="${pageSize}">
+                                <input type="hidden" name="userKeyword" th:value="${userKeyword}">
+                                <input type="hidden" name="userStatus" th:value="${userStatus}">
+                                <input type="hidden" name="userGmailVerified" th:value="${userGmailVerified}">
+                                <input type="number" min="0" step="1000" name="targetTotalSpend" class="form-control form-control-sm" style="width:140px;" th:value="${userTotalSpendInputMap != null ? userTotalSpendInputMap[user.id] : 0}">
+                                <button type="submit" class="btn btn-sm btn-outline-main">Set</button>
+                            </form>
+                        </td>
+                        <td><span class="badge rounded-pill" th:classappend="${user.isLocked()} ? ' text-bg-danger' : ' text-bg-success'" th:text="${user.lockLabel}">Hoạt động</span></td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <form th:if="${user.isLocked()}" th:action="@{/admin/users/toggle-enabled}" method="post" class="m-0 d-inline-flex gap-2 align-items-center flex-wrap">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <input type="hidden" name="userId" th:value="${user.id}">
+                                    <input type="hidden" name="enabled" value="true">
+                                    <input type="hidden" name="page" th:value="${userPage.number}">
+                                    <input type="hidden" name="size" th:value="${pageSize}">
+                                    <input type="hidden" name="userKeyword" th:value="${userKeyword}">
+                                    <input type="hidden" name="userStatus" th:value="${userStatus}">
+                                    <input type="hidden" name="userGmailVerified" th:value="${userGmailVerified}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Mở khóa</button>
+                                </form>
+                                <form th:unless="${user.isLocked()}" th:action="@{/admin/users/toggle-enabled}" method="post" class="m-0 d-inline-flex gap-2 align-items-center flex-wrap">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <input type="hidden" name="userId" th:value="${user.id}">
+                                    <input type="hidden" name="enabled" value="false">
+                                    <input type="hidden" name="page" th:value="${userPage.number}">
+                                    <input type="hidden" name="size" th:value="${pageSize}">
+                                    <input type="hidden" name="userKeyword" th:value="${userKeyword}">
+                                    <input type="hidden" name="userStatus" th:value="${userStatus}">
+                                    <input type="hidden" name="userGmailVerified" th:value="${userGmailVerified}">
+                                    <select name="lockDuration" class="form-select form-select-sm" style="width:auto;">
+                                        <option value="1">Khóa 1 ngày</option>
+                                        <option value="3">Khóa 3 ngày</option>
+                                        <option value="7" selected>Khóa 7 ngày</option>
+                                        <option value="14">Khóa 14 ngày</option>
+                                        <option value="30">Khóa 30 ngày</option>
+                                        <option value="PERMANENT">Vĩnh viễn</option>
+                                    </select>
+                                    <input type="text" name="lockReason" class="form-control form-control-sm" style="width:120px;" placeholder="Lý do khóa..." required>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Khóa</button>
+                                </form>
+                                <a th:href="@{/admin(tab='users',selectedUserId=${user.id},page=${userPage.number},size=${pageSize},userKeyword=${userKeyword},userStatus=${userStatus},userGmailVerified=${userGmailVerified})}" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" th:if="${userPage != null && userPage.totalPages > 1}">
+                <small class="text-muted" th:text="${'Hiển thị trang ' + (userPage.number + 1) + ' / ' + userPage.totalPages + ' - ' + userPage.totalElements + ' người dùng'}">Trang</small>
+                <nav aria-label="Phân trang người dùng">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${userPage.first} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='users',page=${userPage.number - 1},size=${pageSize},userKeyword=${userKeyword},userStatus=${userStatus},userGmailVerified=${userGmailVerified})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, userPage.totalPages - 1)}" th:classappend="${pageIndex == userPage.number} ? 'active' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='users',page=${pageIndex},size=${pageSize},userKeyword=${userKeyword},userStatus=${userStatus},userGmailVerified=${userGmailVerified})}" th:text="${pageIndex + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${userPage.last} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='users',page=${userPage.number + 1},size=${pageSize},userKeyword=${userKeyword},userStatus=${userStatus},userGmailVerified=${userGmailVerified})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <section th:if="${activeTab == 'categories'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>Quản lý danh mục</h2>
+                    <p class="mb-0">Tìm kiếm và lọc danh mục theo tên, mô tả, trạng thái.</p>
+                </div>
+                <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#addCategoryModal"><i class="bi bi-plus-lg me-1"></i> Thêm danh mục</button>
+            </div>
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form live-admin-filter" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="categories">
+                    <input type="hidden" name="page" value="0">
+                    <div>
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" name="categoryKeyword" class="form-control" placeholder="Tên, mô tả, icon..." th:value="${categoryKeyword}">
+                    </div>
+                    <div>
+                        <label class="form-label">Trạng thái</label>
+                        <select name="categoryStatus" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="active" th:selected="${categoryStatus == 'active'}">Hoạt động</option>
+                            <option value="inactive" th:selected="${categoryStatus == 'inactive'}">Không hoạt động</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Số dòng</label>
+                        <select name="size" class="form-select"><option value="10" th:selected="${pageSize == 10}">10</option><option value="20" th:selected="${pageSize == 20}">20</option><option value="50" th:selected="${pageSize == 50}">50</option></select>
+                    </div>
+                    <div><button type="submit" class="btn btn-main w-100">Áp dụng</button></div>
+                </form>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle admin-table">
+                    <thead><tr><th>ID</th><th>Biểu tượng</th><th>Tên danh mục</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                    <tbody>
+                    <tr th:if="${categoryPage == null || categoryPage.totalElements == 0}"><td colspan="5" class="text-center text-muted py-4">Không có danh mục.</td></tr>
+                    <tr th:each="cat : ${categoryPage.content}">
+                        <td th:text="${cat.id}">1</td>
+                        <td>
+                            <i th:if="${cat.icon != null && cat.icon.startsWith('bi-')}" th:class="'bi ' + ${cat.icon} + ' fs-4 text-primary'"></i>
+                            <img th:if="${cat.icon != null && !cat.icon.startsWith('bi-')}" th:src="${cat.icon}" style="width:32px;height:32px;object-fit:contain;">
+                        </td>
+                        <td><strong th:text="${cat.name}">Category</strong></td>
+                        <td><span class="badge rounded-pill" th:classappend="${cat.active} ? ' text-bg-success' : ' text-bg-secondary'" th:text="${cat.active ? 'Hoạt động' : 'Không hoạt động'}">Hoạt động</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" th:data-bs-target="${'#editCategoryModal-' + cat.id}" th:disabled="${categoryHasProducts != null && categoryHasProducts[cat.id]}" th:title="${categoryHasProducts != null && categoryHasProducts[cat.id]} ? 'Danh mục đang có sản phẩm nên không thể sửa' : 'Sửa danh mục'">Sửa</button>
+                            <div class="modal fade" th:id="${'editCategoryModal-' + cat.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header"><h5 class="modal-title">Sửa danh mục</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                        <form th:action="@{/admin/categories/save}" method="post" enctype="multipart/form-data">
+                                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                            <input type="hidden" name="categoryId" th:value="${cat.id}">
+                                            <input type="hidden" name="size" th:value="${pageSize}">
+                                            <div class="modal-body text-start">
+                                                <div class="mb-3"><label class="form-label fw-bold">Tên danh mục</label><input type="text" name="name" class="form-control" required th:value="${cat.name}"></div>
+                                                <div class="mb-3"><label class="form-label fw-bold">Chọn Icon sẵn có</label>
+                                                    <select name="icon" class="form-select">
+                                                        <option value="bi-tag" th:selected="${cat.icon == 'bi-tag'}">Tag (bi-tag)</option>
+                                                        <option value="bi-stars" th:selected="${cat.icon == 'bi-stars'}">Ngôi sao (bi-stars)</option>
+                                                        <option value="bi-balloon-heart" th:selected="${cat.icon == 'bi-balloon-heart'}">Bóng bay (bi-balloon-heart)</option>
+                                                        <option value="bi-lightning-charge-fill" th:selected="${cat.icon == 'bi-lightning-charge-fill'}">Tia sét (bi-lightning-charge-fill)</option>
+                                                        <option value="bi-bag-heart" th:selected="${cat.icon == 'bi-bag-heart'}">Túi (bi-bag-heart)</option>
+                                                        <option value="bi-moon-stars-fill" th:selected="${cat.icon == 'bi-moon-stars-fill'}">Mặt trăng (bi-moon-stars-fill)</option>
+                                                        <option value="bi-cloud-sun-fill" th:selected="${cat.icon == 'bi-cloud-sun-fill'}">Đám mây (bi-cloud-sun-fill)</option>
+                                                        <option value="">-- Dùng ảnh tải lên --</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3"><label class="form-label fw-bold">Hoặc tải ảnh lên làm Icon</label><input type="file" name="iconFile" class="form-control" accept="image/*"></div>
+                                                <div class="mb-3"><label class="form-label fw-bold">Mô tả danh mục</label><textarea name="description" class="form-control" rows="2" th:text="${cat.description}"></textarea></div>
+                                                <div class="mb-3"><label class="form-label fw-bold">Số thứ tự hiển thị</label><input type="number" name="displayOrder" class="form-control" th:value="${cat.displayOrder}"></div>
+                                            </div>
+                                            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-main">Lưu</button></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" th:if="${categoryPage != null && categoryPage.totalPages > 1}">
+                <small class="text-muted" th:text="${'Hiển thị trang ' + (categoryPage.number + 1) + ' / ' + categoryPage.totalPages + ' - ' + categoryPage.totalElements + ' danh mục'}">Trang</small>
+                <nav aria-label="Phân trang danh mục">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${categoryPage.first} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='categories',page=${categoryPage.number - 1},size=${categoryPageSize},categoryKeyword=${categoryKeyword},categoryStatus=${categoryStatus})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, categoryPage.totalPages - 1)}" th:classappend="${pageIndex == categoryPage.number} ? 'active' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='categories',page=${pageIndex},size=${categoryPageSize},categoryKeyword=${categoryKeyword},categoryStatus=${categoryStatus})}" th:text="${pageIndex + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${categoryPage.last} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='categories',page=${categoryPage.number + 1},size=${categoryPageSize},categoryKeyword=${categoryKeyword},categoryStatus=${categoryStatus})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <section th:if="${activeTab == 'products'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>Quản lý sản phẩm</h2>
+                    <p class="mb-0">Xem chi tiết, sửa, xóa và lọc sản phẩm theo trạng thái.</p>
+                </div>
+                <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#addProductModal"><i class="bi bi-plus-lg me-1"></i> Thêm sản phẩm</button>
+            </div>
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form product-filter-form live-admin-filter" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="products">
+                    <input type="hidden" name="page" value="0">
+                    <div>
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" name="productKeyword" class="form-control" placeholder="Tên, mô tả, danh mục..." th:value="${productKeyword}">
+                    </div>
+                    <div>
+                        <label class="form-label">Số dòng</label>
+                        <select name="size" class="form-select form-select-sm">
+                            <option value="10" th:selected="${productPageSize == 10}">10</option>
+                            <option value="20" th:selected="${productPageSize == 20}">20</option>
+                            <option value="50" th:selected="${productPageSize == 50}">50</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Trạng thái</label>
+                        <select name="productStatus" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="active" th:selected="${productStatus == 'active'}">Đang bán</option>
+                            <option value="inactive" th:selected="${productStatus == 'inactive'}">Ẩn</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Danh mục</label>
+                        <select name="productCategoryId" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option th:each="cat : ${allCategories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${productCategoryId != null && productCategoryId == cat.id}">Cat</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Flash sale</label>
+                        <select name="productFlashSale" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="true" th:selected="${productFlashSale != null && productFlashSale}">Có</option>
+                            <option value="false" th:selected="${productFlashSale != null && !productFlashSale}">Không</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle admin-table">
+                    <thead><tr><th>ID</th><th>Mã SP</th><th>Ảnh</th><th>Tên</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                    <tbody>
+                    <tr th:if="${productPage == null || productPage.totalElements == 0}"><td colspan="9" class="text-center text-muted py-4">Không có sản phẩm.</td></tr>
+                    <tr th:each="product : ${productPage.content}">
+                        <td th:text="${product.id}">1</td>
+                        <td><strong th:text="${product.productCode != null ? product.productCode : '---'}">AK-0001-0001</strong></td>
+                        <td><img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:.5rem;"></td>
+                        <td><strong th:text="${product.name}">Name</strong><div class="text-muted small" th:if="${product.isFlashSaleActive()}" th:text="${product.formattedActivePrice}">0đ</div></td>
+                        <td th:text="${product.category != null ? product.category.name : 'Chưa phân loại'}">Danh mục</td>
+                        <td th:text="${product.formattedPrice}">0đ</td>
+                        <td th:text="${product.stock}">0</td>
+                        <td><span class="badge rounded-pill" th:classappend="${product.active} ? ' text-bg-success' : ' text-bg-secondary'" th:text="${product.active ? 'Đang bán' : 'Ẩn'}">Active</span></td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" th:data-bs-target="${'#productDetailModal-' + product.id}">Chi tiết</button>
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" th:data-bs-target="${'#editProductModal-' + product.id}">Sửa</button>
+                                <form th:action="@{/admin/products/delete}" method="post" class="m-0" onsubmit="return confirm('Xóa sản phẩm này?');">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <input type="hidden" name="productId" th:value="${product.id}">
+                                    <input type="hidden" name="size" th:value="${productPageSize}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                </form>
+                                <form th:action="@{/admin/products/toggle}" method="post" class="m-0">
+                                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                    <input type="hidden" name="productId" th:value="${product.id}">
+                                    <input type="hidden" name="size" th:value="${productPageSize}">
+                                    <button type="submit" class="btn btn-sm" th:classappend="${product.active} ? ' btn-outline-secondary' : ' btn-outline-success'" th:text="${product.active ? 'Ẩn' : 'Hiện'}">Toggle</button>
+                                </form>
+                            </div>
+
+                            <div class="modal fade" th:id="${'productDetailModal-' + product.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header"><h5 class="modal-title">Chi tiết sản phẩm</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                        <div class="modal-body">
+                                            <div class="detail-grid">
+                                                <div><span>Mã sản phẩm</span><strong th:text="${product.productCode != null ? product.productCode : '---'}">AK-0001-0001</strong></div>
+                                                <div><span>Tên</span><strong th:text="${product.name}">Tên</strong></div>
+                                                <div><span>Danh mục</span><strong th:text="${product.category != null ? product.category.name : 'Chưa phân loại'}">Danh mục</strong></div>
+                                                <div><span>Giá</span><strong th:text="${product.formattedPrice}">0đ</strong></div>
+                                                <div><span>Giá gốc</span><strong th:text="${product.formattedOriginalPrice != null ? product.formattedOriginalPrice : '---'}">---</strong></div>
+                                                <div><span>Tồn kho</span><strong th:text="${product.stock}">0</strong></div>
+                                                <div><span>Đã bán</span><strong th:text="${product.soldCount}">0</strong></div>
+                                                <div class="full"><span>Mô tả</span><strong th:text="${product.description}">Mô tả</strong></div>
+                                                <div><span>Flash sale</span><strong th:text="${product.isFlashSaleActive() ? 'Đang chạy' : 'Không'}">Không</strong></div>
+                                                <div><span>Trạng thái</span><strong th:text="${product.active ? 'Đang bán' : 'Ẩn'}">Đang bán</strong></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal fade" th:id="${'editProductModal-' + product.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header"><h5 class="modal-title">Sửa sản phẩm</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                        <form th:action="@{/admin/products/save}" method="post" enctype="multipart/form-data">
+                                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                            <input type="hidden" name="productId" th:value="${product.id}">
+                                            <input type="hidden" name="size" th:value="${productPageSize}">
+                                            <div class="modal-body text-start">
+                                                <div class="row g-3">
+                                                    <div class="col-12"><label class="form-label fw-bold">Tên sản phẩm</label><input type="text" name="name" class="form-control" required th:value="${product.name}"></div>
+                                                    <div class="col-12"><label class="form-label fw-bold">Mô tả</label><textarea name="description" class="form-control" rows="3" th:text="${product.description}"></textarea></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Giá bán</label><input type="number" name="price" class="form-control" required th:value="${product.price}"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Giá gốc</label><input type="number" name="originalPrice" class="form-control" th:value="${product.originalPrice}"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Tồn kho</label><input type="number" name="stock" class="form-control" required th:value="${product.stock}"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Danh mục</label><select name="categoryId" class="form-select"><option value="">Không có</option><option th:each="cat : ${allCategories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${product.category != null && product.category.id == cat.id}">Cat</option></select></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Độ tuổi</label><input type="text" name="ageRange" class="form-control" th:value="${product.ageRange}"></div>
+                                                    <div class="col-md-4"><label class="form-label fw-bold">Sizes</label><input type="text" name="sizes" class="form-control" th:value="${product.sizes}"></div>
+                                                    <div class="col-md-8">
+                                                        <label class="form-label fw-bold">Ảnh sản phẩm</label>
+                                                        <div class="product-image-uploader border rounded-3 p-3 bg-light">
+                                                            <img class="product-image-preview d-none w-100 mb-2" th:src="${product.imagePath != null ? product.imagePath : ''}" alt="Xem trước ảnh" style="max-height:220px;object-fit:cover;border-radius:.75rem;">
+                                                            <div class="product-image-name text-muted small mb-2" th:text="${product.imagePath != null ? 'Ảnh hiện tại: ' + product.imagePath : 'Chưa chọn ảnh'}">Chưa chọn ảnh</div>
+                                                            <input type="file" name="imageFile" class="form-control product-image-input" accept="image/*" th:attr="data-initial-preview=${product.imagePath != null ? product.imagePath : ''},data-initial-label=${product.imagePath != null ? 'Ảnh hiện tại' : 'Chưa chọn ảnh'}">
+                                                            <small class="text-muted d-block mt-2">Chọn ảnh JPG/PNG. Ảnh sẽ được xem trước ngay khi chọn.</small>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="featured" value="true" th:checked="${product.featured}" th:id="${'featured-' + product.id}"><label class="form-check-label fw-bold" th:for="${'featured-' + product.id}"> Nổi bật</label></div></div>
+                                                    <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="active" value="true" th:checked="${product.active}" th:id="${'active-' + product.id}"><label class="form-check-label fw-bold" th:for="${'active-' + product.id}"> Đang bán</label></div></div>
+                                                    <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input text-danger bg-danger-subtle border-danger" type="checkbox" name="flashSale" value="true" th:checked="${product.flashSale}" th:id="${'fs-' + product.id}"><label class="form-check-label fw-bold text-danger" th:for="${'fs-' + product.id}"> Tham gia Flash Sale</label></div></div>
+                                                    <div class="col-md-3"><label class="form-label fw-bold text-danger">Giá Flash Sale (VNĐ)</label><input type="number" name="flashSalePrice" class="form-control border-danger" th:value="${product.flashSalePrice}" placeholder="Ví dụ: 99000"></div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-main">Lưu sản phẩm</button></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" th:if="${productPage != null && productPage.totalPages > 1}">
+                <small class="text-muted" th:text="${'Hiển thị trang ' + (productPage.number + 1) + ' / ' + productPage.totalPages + ' - ' + productPage.totalElements + ' sản phẩm'}">Trang</small>
+                <nav aria-label="Phân trang sản phẩm">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${productPage.first} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='products',page=${productPage.number - 1},size=${productPageSize},productKeyword=${productKeyword},productStatus=${productStatus},productCategoryId=${productCategoryId},productFlashSale=${productFlashSale})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageIndex == productPage.number} ? 'active' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='products',page=${pageIndex},size=${productPageSize},productKeyword=${productKeyword},productStatus=${productStatus},productCategoryId=${productCategoryId},productFlashSale=${productFlashSale})}" th:text="${pageIndex + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${productPage.last} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='products',page=${productPage.number + 1},size=${productPageSize},productKeyword=${productKeyword},productStatus=${productStatus},productCategoryId=${productCategoryId},productFlashSale=${productFlashSale})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <section th:if="${activeTab == 'orders'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>Quản lý đơn hàng</h2>
+                    <p class="mb-0">Lọc theo mã đơn, khách hàng và trạng thái.</p>
+                </div>
+            </div>
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form live-admin-filter" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="orders">
+                    <input type="hidden" name="page" value="0">
+                    <div><label class="form-label">Tìm kiếm</label><input type="text" name="orderKeyword" class="form-control" placeholder="Mã đơn, khách hàng, số điện thoại..." th:value="${orderKeyword}"></div>
+                    <div>
+                        <label class="form-label">Trạng thái</label>
+                        <select name="orderStatus" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="WAITING_PAYMENT" th:selected="${orderStatus == 'WAITING_PAYMENT'}">Đang chờ thanh toán</option>
+                            <option value="PENDING" th:selected="${orderStatus == 'PENDING'}">Chờ xác nhận</option>
+                            <option value="CONFIRMED" th:selected="${orderStatus == 'CONFIRMED'}">Đã xác nhận</option>
+                            <option value="SHIPPING" th:selected="${orderStatus == 'SHIPPING'}">Đang giao</option>
+                            <option value="DELIVERED" th:selected="${orderStatus == 'DELIVERED'}">Đã giao</option>
+                            <option value="CANCELLED" th:selected="${orderStatus == 'CANCELLED'}">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div><label class="form-label">Số dòng</label><select name="size" class="form-select"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div>
+                    <div><button type="submit" class="btn btn-main w-100">Áp dụng</button></div>
+                </form>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle admin-table">
+                    <thead><tr><th>Mã ĐH</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Ngày đặt</th><th>Hành động</th></tr></thead>
+                    <tbody>
+                    <tr th:if="${adminOrderPage == null || adminOrderPage.totalElements == 0}"><td colspan="6" class="text-center text-muted py-4">Không có đơn hàng.</td></tr>
+                    <tr th:each="order : ${adminOrderPage.content}" th:id="${'order-row-' + order.orderCode}" th:classappend="${focusedOrderCode != null && focusedOrderCode == order.orderCode} ? 'table-warning' : ''">
+                        <td><strong th:text="${order.orderCode}">MWK123</strong></td>
+                        <td th:text="${order.recipientName}">Tên</td>
+                        <td th:text="${order.formattedTotal}">0đ</td>
+                        <td><span class="badge rounded-pill" th:classappend="'text-bg-' + ${order.statusColor}" th:text="${order.statusLabel}">Status</span></td>
+                        <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-main" data-bs-toggle="modal" th:data-bs-target="${'#orderDetailModal-' + order.orderCode}">Chi tiết</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" th:if="${adminOrderPage != null && adminOrderPage.totalPages > 1}">
+                <small class="text-muted" th:text="${'Hiển thị trang ' + (adminOrderPage.number + 1) + ' / ' + adminOrderPage.totalPages + ' - ' + adminOrderPage.totalElements + ' đơn hàng'}">Trang</small>
+                <nav aria-label="Phân trang đơn hàng">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${adminOrderPage.first} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='orders',page=${adminOrderPage.number - 1},size=${orderPageSize},orderKeyword=${orderKeyword},orderStatus=${orderStatus})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, adminOrderPage.totalPages - 1)}" th:classappend="${pageIndex == adminOrderPage.number} ? 'active' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='orders',page=${pageIndex},size=${orderPageSize},orderKeyword=${orderKeyword},orderStatus=${orderStatus})}" th:text="${pageIndex + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${adminOrderPage.last} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='orders',page=${adminOrderPage.number + 1},size=${orderPageSize},orderKeyword=${orderKeyword},orderStatus=${orderStatus})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <div th:each="order : ${adminOrderPage.content}" class="modal fade" th:id="${'orderDetailModal-' + order.orderCode}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title mb-0">Chi tiết đơn hàng <span th:text="${order.orderCode}">MWK123</span></h5>
+                                <small class="text-muted">Khách hàng: <span th:text="${order.recipientName}">Tên</span></small>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="detail-grid mb-3">
+                                <div><span>Mã đơn</span><strong th:text="${order.orderCode}">MWK123</strong></div>
+                                <div><span>Trạng thái</span><strong th:text="${order.statusLabel}">Chờ xác nhận</strong></div>
+                                <div><span>Tổng tiền</span><strong th:text="${order.formattedTotal}">0đ</strong></div>
+                                <div><span>Ngày đặt</span><strong th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</strong></div>
+                                <div th:if="${order.bankTransfer}">
+                                    <span>Trạng thái CK</span>
+                                    <strong>
+                                        <i th:if="${order.paymentConfirmed}" class="bi bi-check-circle-fill text-success me-1"></i>
+                                        <i th:unless="${order.paymentConfirmed}" class="bi bi-hourglass-split text-warning me-1"></i>
+                                        <span th:text="${order.paymentStatusLabel}">Chưa thanh toán</span>
+                                    </strong>
+                                </div>
+                                <div th:if="${order.paymentConfirmedAt != null}">
+                                    <span>Xác nhận lúc</span>
+                                    <strong th:text="${#temporals.format(order.paymentConfirmedAt, 'dd/MM/yyyy HH:mm:ss')}">01/01/2026 00:00:00</strong>
+                                </div>
+                                <div class="full"><span>Địa chỉ giao hàng</span><strong th:text="${order.shippingAddress}">Địa chỉ</strong></div>
+                                <div class="full" th:if="${order.note != null && !order.note.isBlank()}"><span>Ghi chú</span><strong th:text="${order.note}">Ghi chú</strong></div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table align-middle admin-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th style="width: 150px">Mã SP</th>
+                                        <th>Sản phẩm</th>
+                                        <th style="width: 90px">SL</th>
+                                        <th style="width: 120px">Đơn giá</th>
+                                        <th style="width: 120px">Thành tiền</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="item : ${order.items}">
+                                        <td><strong th:text="${item.productCode != null ? item.productCode : '---'}">AK-0001-0001</strong></td>
+                                        <td>
+                                            <strong th:text="${item.productName}">Tên sản phẩm</strong>
+                                            <div class="text-muted small">
+                                                <span th:if="${item.selectedSize != null && !item.selectedSize.isBlank()}" th:text="${'Size: ' + item.selectedSize}">Size</span>
+                                            </div>
+                                        </td>
+                                        <td th:text="${item.quantity}">1</td>
+                                        <td th:text="${item.formattedUnitPrice}">0đ</td>
+                                        <td th:text="${item.formattedSubtotal}">0đ</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div th:if="${order.adminUpdateLocked}" class="alert alert-secondary mt-3 mb-0">
+                                Đơn hàng đang ở trạng thái <strong th:text="${order.statusLabel}">Đã giao</strong> nên quản trị viên không thể thao tác.
+                            </div>
+
+                            <form th:unless="${order.adminUpdateLocked}" th:action="@{/admin/orders/update-status}" method="post" class="mt-3">
+                                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                <input type="hidden" name="orderId" th:value="${order.id}">
+                                <input type="hidden" name="page" th:value="${adminOrderPage != null ? adminOrderPage.number : 0}">
+                                <input type="hidden" name="size" th:value="${adminOrderPage != null ? adminOrderPage.size : 10}">
+                                <input type="hidden" name="orderKeyword" th:value="${orderKeyword}">
+                                <input type="hidden" name="orderStatus" th:value="${orderStatus}">
+                                <input type="hidden" name="focusOrderCode" th:value="${focusedOrderCode != null ? focusedOrderCode : order.orderCode}">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">Cập nhật trạng thái</label>
+                                        <select name="newStatus" class="form-select">
+                                            <option value="PENDING" th:selected="${order.status == 'PENDING'}">Chờ xác nhận</option>
+                                            <option value="CONFIRMED" th:selected="${order.status == 'CONFIRMED'}">Đã xác nhận</option>
+                                            <option value="SHIPPING" th:selected="${order.status == 'SHIPPING'}">Đang giao</option>
+                                            <option value="DELIVERED" th:selected="${order.status == 'DELIVERED'}">Đã giao</option>
+                                            <option value="CANCELLED" th:selected="${order.status == 'CANCELLED'}">Đã hủy</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 d-grid">
+                                        <button type="submit" class="btn btn-main">Lưu trạng thái</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section th:if="${activeTab == 'stats'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>Thống kê doanh thu</h2>
+                    <p class="mb-0">Theo dõi doanh thu theo ngày/tháng/năm, top sản phẩm bán chạy và top danh thu theo danh mục.</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a class="btn btn-outline-main"
+                       th:href="@{/admin/stats/export/pdf(statsGranularity=${statsGranularity},statsStartDate=${statsStartDate},statsEndDate=${statsEndDate},statsTopLimit=${statsTopLimit})}">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> In PDF
+                    </a>
+                    <a class="btn btn-main"
+                       th:href="@{/admin/stats/export/excel(statsGranularity=${statsGranularity},statsStartDate=${statsStartDate},statsEndDate=${statsEndDate},statsTopLimit=${statsTopLimit})}">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                    </a>
+                </div>
+            </div>
+
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form stats-filter-form" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="stats">
+                    <div>
+                        <label class="form-label">Nhóm dữ liệu</label>
+                        <select name="statsGranularity" class="form-select">
+                            <option value="DAY" th:selected="${statsGranularity == 'DAY'}">Theo ngày</option>
+                            <option value="MONTH" th:selected="${statsGranularity == 'MONTH'}">Theo tháng</option>
+                            <option value="YEAR" th:selected="${statsGranularity == 'YEAR'}">Theo năm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="statsStartDate" class="form-control" th:value="${statsStartDate}">
+                    </div>
+                    <div>
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="statsEndDate" class="form-control" th:value="${statsEndDate}">
+                    </div>
+                    <div>
+                        <label class="form-label">Top hiển thị</label>
+                        <input type="number" min="3" max="30" name="statsTopLimit" class="form-control" th:value="${statsTopLimit}">
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-main w-100">Lọc dữ liệu</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="stats-summary-grid mt-3" th:if="${statsDashboard != null}">
+                <article class="stats-card">
+                    <span>Tổng doanh thu</span>
+                    <strong th:text="${statsDashboard.totalRevenueFormatted}">0đ</strong>
+                </article>
+                <article class="stats-card">
+                    <span>Đơn đã giao</span>
+                    <strong th:text="${statsDashboard.deliveredOrderCount}">0</strong>
+                </article>
+                <article class="stats-card">
+                    <span>Giá trị đơn trung bình</span>
+                    <strong th:text="${statsDashboard.averageOrderValueFormatted}">0đ</strong>
+                </article>
+                <article class="stats-card">
+                    <span>Khoảng thời gian</span>
+                    <strong th:text="${#temporals.format(statsStartDate, 'dd/MM/yyyy') + ' - ' + #temporals.format(statsEndDate, 'dd/MM/yyyy')}">--</strong>
+                </article>
+                <article class="stats-card" th:if="${statsMonthlyGrowthSummary != null}">
+                    <span>Doanh thu tháng gần nhất</span>
+                    <strong th:text="${statsMonthlyGrowthSummary.latestRevenueFormatted}">0đ</strong>
+                    <small class="text-muted" th:text="${'Tháng ' + statsMonthlyGrowthSummary.latestMonthLabel}">--</small>
+                </article>
+                <article class="stats-card" th:if="${statsMonthlyGrowthSummary != null}">
+                    <span>Tăng trưởng so với tháng trước</span>
+                    <strong th:classappend="${' ' + statsMonthlyGrowthSummary.growthClass}" th:text="${statsMonthlyGrowthSummary.growthPercentFormatted}">0.00%</strong>
+                    <small class="text-muted" th:text="${statsMonthlyGrowthSummary.previousRevenueFormatted + ' -> ' + statsMonthlyGrowthSummary.latestRevenueFormatted}">--</small>
+                </article>
+            </div>
+
+            <div class="stats-chart-grid mt-3" th:if="${statsDashboard != null}">
+                <article class="stats-chart-card">
+                    <h3>Biểu đồ doanh thu</h3>
+                    <p class="mb-0 text-muted">Doanh thu theo bộ lọc hiện tại.</p>
+                    <div class="chart-wrap"><canvas id="statsRevenueTrendChart"></canvas></div>
+                </article>
+                <article class="stats-chart-card">
+                    <h3>Biểu đồ tăng trưởng theo tháng</h3>
+                    <p class="mb-0 text-muted">So sánh tăng/giảm doanh thu giữa các tháng trong khoảng lọc.</p>
+                    <div class="chart-wrap"><canvas id="statsMonthlyGrowthChart"></canvas></div>
+                </article>
+                <article class="stats-chart-card">
+                    <h3>Top sản phẩm theo bộ lọc</h3>
+                    <p class="mb-0 text-muted">Top bán chạy theo doanh thu.</p>
+                    <div class="chart-wrap"><canvas id="statsTopProductRangeChart"></canvas></div>
+                </article>
+                <article class="stats-chart-card">
+                    <h3>Top danh thu theo danh mục</h3>
+                    <p class="mb-0 text-muted">Danh mục mang lại doanh thu cao nhất.</p>
+                    <div class="chart-wrap"><canvas id="statsCategoryRevenueChart"></canvas></div>
+                </article>
+            </div>
+
+            <div class="table-responsive mt-3" th:if="${statsDashboard != null}">
+                <table class="table align-middle admin-table">
+                    <thead>
+                    <tr><th colspan="4">Top sản phẩm theo bộ lọc</th></tr>
+                    <tr><th>Hạng</th><th>Sản phẩm</th><th>Số lượng</th><th>Doanh thu</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${statsTopProducts == null || statsTopProducts.isEmpty()}"><td colspan="4" class="text-center text-muted py-4">Không có dữ liệu.</td></tr>
+                    <tr th:each="item : ${statsTopProducts}">
+                        <td th:text="${item.rank}">1</td>
+                        <td th:text="${item.name}">Product</td>
+                        <td th:text="${item.quantity}">0</td>
+                        <td th:text="${item.revenueFormatted}">0đ</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mt-3" th:if="${statsDashboard != null}">
+                <table class="table align-middle admin-table">
+                    <thead>
+                    <tr><th colspan="3">Top danh thu theo danh mục</th></tr>
+                    <tr><th>Hạng</th><th>Danh mục</th><th>Doanh thu</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${statsTopCategories == null || statsTopCategories.isEmpty()}"><td colspan="3" class="text-center text-muted py-4">Không có dữ liệu.</td></tr>
+                    <tr th:each="item : ${statsTopCategories}">
+                        <td th:text="${item.rank}">1</td>
+                        <td th:text="${item.categoryName}">Category</td>
+                        <td th:text="${item.revenueFormatted}">0đ</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mt-3" th:if="${statsDashboard != null}">
+                <table class="table align-middle admin-table">
+                    <thead>
+                    <tr><th colspan="4">Chi tiết tăng trưởng doanh thu theo tháng</th></tr>
+                    <tr><th>Tháng</th><th>Doanh thu</th><th>Tháng trước</th><th>Tăng trưởng</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${statsMonthlyGrowthStats == null || statsMonthlyGrowthStats.isEmpty()}"><td colspan="4" class="text-center text-muted py-4">Không có dữ liệu.</td></tr>
+                    <tr th:each="item : ${statsMonthlyGrowthStats}">
+                        <td th:text="${item.monthLabel}">01/2026</td>
+                        <td th:text="${item.revenueFormatted}">0đ</td>
+                        <td th:text="${item.previousRevenueFormatted}">0đ</td>
+                        <td>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${item.positiveGrowth} ? ' text-bg-success' : (${item.negativeGrowth} ? ' text-bg-danger' : ' text-bg-secondary')"
+                                  th:text="${item.growthPercentFormatted}">0.00%</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="stats-period-grid mt-3" th:if="${statsDashboard != null}">
+                <article class="stats-period-card">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <h4 class="mb-0">Top 3 trong ngày</h4>
+                        <small class="text-muted" th:text="${statsDaySummary.periodLabel}">--</small>
+                    </div>
+                    <div class="chart-wrap chart-wrap-sm"><canvas id="statsTopDayChart"></canvas></div>
+                    <ul class="stats-mini-list">
+                        <li th:if="${statsDaySummary.topProducts == null || statsDaySummary.topProducts.isEmpty()}" class="text-muted">Không có dữ liệu.</li>
+                        <li th:each="item : ${statsDaySummary.topProducts}">
+                            <strong th:text="${'Top ' + item.rank + ': ' + item.name}">Top 1</strong>
+                            <span th:text="${item.quantity + ' SP - ' + item.revenueFormatted}">0</span>
+                        </li>
+                    </ul>
+                </article>
+
+                <article class="stats-period-card">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <h4 class="mb-0">Top 3 trong tháng</h4>
+                        <small class="text-muted" th:text="${statsMonthSummary.periodLabel}">--</small>
+                    </div>
+                    <div class="chart-wrap chart-wrap-sm"><canvas id="statsTopMonthChart"></canvas></div>
+                    <ul class="stats-mini-list">
+                        <li th:if="${statsMonthSummary.topProducts == null || statsMonthSummary.topProducts.isEmpty()}" class="text-muted">Không có dữ liệu.</li>
+                        <li th:each="item : ${statsMonthSummary.topProducts}">
+                            <strong th:text="${'Top ' + item.rank + ': ' + item.name}">Top 1</strong>
+                            <span th:text="${item.quantity + ' SP - ' + item.revenueFormatted}">0</span>
+                        </li>
+                    </ul>
+                </article>
+
+                <article class="stats-period-card">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <h4 class="mb-0">Top 3 trong năm</h4>
+                        <small class="text-muted" th:text="${statsYearSummary.periodLabel}">--</small>
+                    </div>
+                    <div class="chart-wrap chart-wrap-sm"><canvas id="statsTopYearChart"></canvas></div>
+                    <ul class="stats-mini-list">
+                        <li th:if="${statsYearSummary.topProducts == null || statsYearSummary.topProducts.isEmpty()}" class="text-muted">Không có dữ liệu.</li>
+                        <li th:each="item : ${statsYearSummary.topProducts}">
+                            <strong th:text="${'Top ' + item.rank + ': ' + item.name}">Top 1</strong>
+                            <span th:text="${item.quantity + ' SP - ' + item.revenueFormatted}">0</span>
+                        </li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <!-- Audit Log Tab -->
+        <section th:if="${activeTab == 'audit'}" class="admin-list-card mt-3">
+            <div class="admin-list-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2><i class="bi bi-journal-text me-2"></i>Nhật ký hoạt động</h2>
+                    <p class="mb-0">Lịch sử toàn bộ các thao tác của người dùng và quản trị viên trong hệ thống.</p>
+                </div>
+            </div>
+            <div class="admin-filter-card mt-3">
+                <form class="admin-filter-form live-admin-filter" th:action="@{/admin}" method="get">
+                    <input type="hidden" name="tab" value="audit">
+                    <input type="hidden" name="page" value="0">
+                    <div>
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" name="auditKeyword" class="form-control" placeholder="Tài khoản, hành động, chi tiết..." th:value="${auditKeyword}">
+                    </div>
+                    <div>
+                        <label class="form-label">Loại nhật ký</label>
+                        <select name="auditType" class="form-select">
+                            <option value="ALL" th:selected="${auditType == null || auditType == 'ALL'}">Tất cả</option>
+                            <option value="ORDER" th:selected="${auditType == 'ORDER'}">Đơn hàng</option>
+                            <option value="ACTION" th:selected="${auditType == 'ACTION'}">Thao tác</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Số dòng</label>
+                        <select name="size" class="form-select">
+                            <option value="10" th:selected="${auditPageSize == 10}">10</option>
+                            <option value="20" th:selected="${auditPageSize == 20}">20</option>
+                            <option value="50" th:selected="${auditPageSize == 50}">50</option>
+                        </select>
+                    </div>
+                    <div><button type="submit" class="btn btn-main w-100">Áp dụng</button></div>
+                </form>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px">#</th>
+                            <th style="width:140px">Thời gian</th>
+                            <th style="width:120px">Tài khoản</th>
+                            <th style="width:160px">Hành động</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${auditLogsPage == null || auditLogsPage.totalElements == 0}">
+                            <td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu nhật ký.</td>
+                        </tr>
+                        <tr th:each="log, stat : ${auditLogsPage.content}">
+                            <td th:text="${stat.count}" class="text-muted small"></td>
+                            <td>
+                                <small class="text-muted" th:text="${#temporals.format(log.createdAt, 'dd/MM HH:mm:ss')}">01/01 00:00</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${log.username}">user</span>
+                            </td>
+                            <td>
+                                <span th:text="${log.action}"
+                                      th:classappend="${log.action.contains('HỦY') or log.action.contains('KHÓA') or log.action.contains('DISABLE')} ? ' text-danger fw-bold' :
+                                                     (${log.action.contains('ĐẶT') or log.action.contains('UPDATE') or log.action.contains('EDIT')} ? ' text-primary fw-semibold' : ' text-success fw-semibold')"></span>
+                            </td>
+                            <td class="small text-muted">
+                                <div th:text="${log.details}">Chi tiết</div>
+                                <a th:if="${log.targetOrderCode != null}"
+                                   class="btn btn-sm btn-outline-main mt-2"
+                                   th:href="@{/admin(tab='orders',orderKeyword=${log.targetOrderCode},focusOrderCode=${log.targetOrderCode})}">Xem chi tiết</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" th:if="${auditLogsPage != null && auditLogsPage.totalPages > 1}">
+                <small class="text-muted" th:text="${'Hiển thị trang ' + (auditLogsPage.number + 1) + ' / ' + auditLogsPage.totalPages + ' - ' + auditLogsPage.totalElements + ' nhật ký'}">Trang</small>
+                <nav aria-label="Phân trang nhật ký">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${auditLogsPage.first} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='audit',page=${auditLogsPage.number - 1},size=${auditPageSize},auditKeyword=${auditKeyword},auditType=${auditType})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageIndex : ${#numbers.sequence(0, auditLogsPage.totalPages - 1)}" th:classappend="${pageIndex == auditLogsPage.number} ? 'active' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='audit',page=${pageIndex},size=${auditPageSize},auditKeyword=${auditKeyword},auditType=${auditType})}" th:text="${pageIndex + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${auditLogsPage.last} ? 'disabled' : ''">
+                            <a class="page-link" th:href="@{/admin(tab='audit',page=${auditLogsPage.number + 1},size=${auditPageSize},auditKeyword=${auditKeyword},auditType=${auditType})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true" th:if="${showDetailModal}" th:classappend="${showDetailModal} ? 'show d-block' : ''">
+    <div th:if="${showDetailModal}" class="modal-backdrop fade show" style="z-index: 1040;" onclick="window.location.href='/admin?tab=users'"></div>
+    <div class="modal-dialog modal-dialog-centered" style="z-index: 1055;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chỉnh sửa tài khoản</h5>
+                <a th:href="@{/admin(tab='users')}" class="btn-close"></a>
+            </div>
+            <form th:action="@{/admin/users/save}" method="post" th:object="${adminForm}">
+                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                <input type="hidden" th:field="*{id}">
+                <input type="hidden" name="tab" value="users">
+                <input type="hidden" name="page" th:value="${userPage != null ? userPage.number : 0}">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <input type="hidden" name="userKeyword" th:value="${userKeyword}">
+                <input type="hidden" name="userStatus" th:value="${userStatus}">
+                <input type="hidden" name="userGmailVerified" th:value="${userGmailVerified}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label fw-bold">Tài khoản</label><input type="text" class="form-control" th:classappend="${#fields.hasErrors('account')} ? 'is-invalid' : ''" th:field="*{account}"><div class="invalid-feedback" th:if="${#fields.hasErrors('account')}" th:errors="*{account}"></div></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Email</label><input type="email" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" th:field="*{email}"><div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Họ (tên đệm)</label><input type="text" class="form-control" th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid' : ''" th:field="*{lastName}"><div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Tên</label><input type="text" class="form-control" th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid' : ''" th:field="*{firstName}"><div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Số điện thoại</label><input type="text" class="form-control" th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''" th:field="*{phoneNumber}"><div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Ngày sinh</label><input type="date" class="form-control" th:classappend="${#fields.hasErrors('birthDate')} ? 'is-invalid' : ''" th:field="*{birthDate}"><div class="invalid-feedback" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></div></div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Giới tính</label>
+                            <div class="d-flex gap-3 mt-1" th:classappend="${#fields.hasErrors('gender')} ? 'is-invalid' : ''">
+                                <label><input type="radio" th:field="*{gender}" value="MALE"> Nam</label>
+                                <label><input type="radio" th:field="*{gender}" value="FEMALE"> Nữ</label>
+                                <label><input type="radio" th:field="*{gender}" value="OTHER"> Khác</label>
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}"></div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Trạng thái hoạt động</label><div class="form-check form-switch mt-1"><input class="form-check-input" type="checkbox" role="switch" id="userEnabled" th:field="*{enabled}"></div></div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Thời gian khóa</label>
+                            <select class="form-select" th:field="*{lockDuration}">
+                                <option value="">Tự động theo trạng thái</option>
+                                <option value="1">1 ngày</option>
+                                <option value="3">3 ngày</option>
+                                <option value="7">7 ngày</option>
+                                <option value="14">14 ngày</option>
+                                <option value="30">30 ngày</option>
+                                <option value="PERMANENT">Vĩnh viễn</option>
+                            </select>
+                            <small class="text-muted d-block mt-1">Chỉ áp dụng khi tắt trạng thái hoạt động.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Lý do khóa</label>
+                            <input type="text" class="form-control" th:field="*{lockReason}" placeholder="Tùy chọn ghi chú lý do...">
+                        </div>
+                        <div class="col-12"><label class="form-label fw-bold">Địa chỉ</label><input type="text" class="form-control" th:classappend="${#fields.hasErrors('address')} ? 'is-invalid' : ''" th:field="*{address}"><div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><a th:href="@{/admin(tab='users')}" class="btn btn-secondary">Đóng</a><button type="submit" class="btn btn-main">Lưu cập nhật</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Thêm danh mục mới</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form th:action="@{/admin/categories/save}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label fw-bold">Tên danh mục</label><input type="text" name="name" class="form-control" required placeholder="Ví dụ: Đồ sơ sinh"></div>
+                    <div class="mb-3"><label class="form-label fw-bold">Chọn Icon sẵn có</label>
+                        <select name="icon" class="form-select">
+                            <option value="bi-tag">Tag (bi-tag)</option>
+                            <option value="bi-stars">Ngôi sao (bi-stars)</option>
+                            <option value="bi-balloon-heart">Bóng bay (bi-balloon-heart)</option>
+                            <option value="bi-lightning-charge-fill">Tia sét (bi-lightning-charge-fill)</option>
+                            <option value="bi-bag-heart">Túi (bi-bag-heart)</option>
+                            <option value="bi-moon-stars-fill">Mặt trăng (bi-moon-stars-fill)</option>
+                            <option value="bi-cloud-sun-fill">Đám mây (bi-cloud-sun-fill)</option>
+                            <option value="">-- Dùng ảnh tải lên --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-bold">Hoặc tải ảnh lên làm Icon</label><input type="file" name="iconFile" class="form-control" accept="image/*"></div>
+                    <div class="mb-3"><label class="form-label fw-bold">Mô tả danh mục</label><textarea name="description" class="form-control" rows="2" placeholder="Nhập một mô tả ngắn..."></textarea></div>
+                    <div class="mb-3"><label class="form-label fw-bold">Số thứ tự hiển thị</label><input type="number" name="displayOrder" class="form-control" value="10"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-main">Lưu danh mục</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Thêm sản phẩm mới</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form th:action="@{/admin/products/save}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                <input type="hidden" name="size" th:value="${productPageSize}">
+                <div class="modal-body text-start">
+                    <div th:if="${adminError}" class="alert alert-danger admin-flash-message">[[${adminError}]]</div>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label fw-bold">Tên sản phẩm</label><input type="text" name="name" class="form-control" required></div>
+                        <div class="col-12"><label class="form-label fw-bold">Mô tả</label><textarea name="description" class="form-control" rows="3"></textarea></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Giá bán</label><input type="number" name="price" class="form-control" required></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Giá gốc</label><input type="number" name="originalPrice" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Tồn kho</label><input type="number" name="stock" class="form-control" value="0" required></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Danh mục</label><select name="categoryId" class="form-select"><option value="">Không có</option><option th:each="cat : ${allCategories}" th:value="${cat.id}" th:text="${cat.name}">Cat</option></select></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Độ tuổi</label><input type="text" name="ageRange" class="form-control" placeholder="1-5 tuổi"></div>
+                        <div class="col-md-4"><label class="form-label fw-bold">Sizes</label><input type="text" name="sizes" class="form-control" placeholder="S,M,L,XL"></div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Ảnh sản phẩm</label>
+                            <div class="product-image-uploader border rounded-3 p-3 bg-light">
+                                <img class="product-image-preview d-none w-100 mb-2" alt="Xem trước ảnh" style="max-height:220px;object-fit:cover;border-radius:.75rem;">
+                                <div class="product-image-name text-muted small mb-2">Chưa chọn ảnh</div>
+                                <input type="file" name="imageFile" class="form-control product-image-input" accept="image/*" data-initial-label="Chưa chọn ảnh">
+                                <small class="text-muted d-block mt-2">Chọn ảnh JPG/PNG. Ảnh sẽ được xem trước ngay khi chọn.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="featured" value="true" id="featuredCheck"><label class="form-check-label fw-bold" for="featuredCheck"> Nổi bật</label></div></div>
+                        <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="active" value="true" id="activeCheck" checked><label class="form-check-label fw-bold" for="activeCheck"> Đang bán</label></div></div>
+                        <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input class="form-check-input text-danger bg-danger-subtle border-danger" type="checkbox" name="flashSale" value="true" id="fsAddCheck"><label class="form-check-label fw-bold text-danger" for="fsAddCheck"> Tham gia Flash Sale</label></div></div>
+                        <div class="col-md-3"><label class="form-label fw-bold text-danger">Giá Flash Sale (VNĐ)</label><input type="number" name="flashSalePrice" class="form-control border-danger" placeholder="Ví dụ: 99000"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-main">Lưu sản phẩm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const shouldOpenAddProductModal = /*[[${showAddProductModal}]]*/ false;
+        const addProductModal = document.getElementById('addProductModal');
+        if (shouldOpenAddProductModal && addProductModal && window.bootstrap) {
+            new bootstrap.Modal(addProductModal).show();
+        }
+    });
+</script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const focusedOrderCode = /*[[${focusedOrderCode}]]*/ '';
+        if (focusedOrderCode) {
+            const targetModal = document.getElementById('orderDetailModal-' + focusedOrderCode);
+            if (targetModal && window.bootstrap) {
+                const modal = new bootstrap.Modal(targetModal);
+                modal.show();
+                const targetRow = document.getElementById('order-row-' + focusedOrderCode);
+                if (targetRow) {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        document.querySelectorAll('.live-admin-filter').forEach((form) => {
+            let timer = null;
+            const doFilter = () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const formData = new FormData(form);
+                    const params = new URLSearchParams(formData).toString();
+                    const url = form.action + '?' + params;
+
+                    // Update URL without reload
+                    window.history.replaceState(null, '', url);
+
+                    // Fetch and replace only the list section
+                    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(r => r.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            // Replace the table area for the current tab
+                            const currentSection = form.closest('.admin-list-card');
+                            const newSection = doc.querySelector('.admin-list-card');
+                            if (currentSection && newSection) {
+                                currentSection.innerHTML = newSection.innerHTML;
+                                // Re-bind events on the new content
+                                bindFilterEvents();
+                            }
+                            // Also update stats
+                            const newStats = doc.querySelector('.admin-stats');
+                            const curStats = document.querySelector('.admin-stats');
+                            if (newStats && curStats) curStats.innerHTML = newStats.innerHTML;
+                        })
+                        .catch(() => { form.submit(); }); // Fallback to normal submit
+                }, 350);
+            };
+
+            form.querySelectorAll('input, select').forEach((control) => {
+                control.addEventListener('input', doFilter);
+                control.addEventListener('change', doFilter);
+            });
+        });
+
+        function bindFilterEvents() {
+            document.querySelectorAll('.live-admin-filter').forEach((form) => {
+                let timer = null;
+                const doFilter = () => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        const formData = new FormData(form);
+                        const params = new URLSearchParams(formData).toString();
+                        const url = form.action + '?' + params;
+                        window.history.replaceState(null, '', url);
+                        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                            .then(r => r.text())
+                            .then(html => {
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                const currentSection = form.closest('.admin-list-card');
+                                const newSection = doc.querySelector('.admin-list-card');
+                                if (currentSection && newSection) {
+                                    currentSection.innerHTML = newSection.innerHTML;
+                                    bindFilterEvents();
+                                }
+                            })
+                            .catch(() => { form.submit(); });
+                    }, 350);
+                };
+                form.querySelectorAll('input, select').forEach((control) => {
+                    control.addEventListener('input', doFilter);
+                    control.addEventListener('change', doFilter);
+                });
+            });
+        }
+
+        document.querySelectorAll('.product-image-input').forEach((input) => {
+            const uploader = input.closest('.product-image-uploader');
+            const preview = uploader ? uploader.querySelector('.product-image-preview') : null;
+            const label = uploader ? uploader.querySelector('.product-image-name') : null;
+            const initialPreview = input.dataset.initialPreview || '';
+            const initialLabel = input.dataset.initialLabel || 'Chưa chọn ảnh';
+
+            const showState = (src, text) => {
+                if (label) {
+                    label.textContent = text;
+                }
+
+                if (!preview) {
+                    return;
+                }
+
+                if (src) {
+                    preview.src = src;
+                    preview.classList.remove('d-none');
+                } else {
+                    preview.removeAttribute('src');
+                    preview.classList.add('d-none');
+                }
+            };
+
+            if (initialPreview) {
+                showState(initialPreview, initialLabel);
+            } else {
+                showState('', initialLabel);
+            }
+
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) {
+                    showState(initialPreview, initialLabel);
+                    return;
+                }
+
+                showState('', file.name);
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (preview) {
+                        preview.src = event.target.result;
+                        preview.classList.remove('d-none');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    });
+</script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const activeTab = /*[[${activeTab}]]*/ '';
+        if (activeTab !== 'stats' || typeof Chart === 'undefined') {
+            return;
+        }
+
+        const revenueLabels = /*[[${statsRevenueLabels}]]*/ [];
+        const revenueValues = /*[[${statsRevenueValues}]]*/ [];
+        const rangeTopLabels = /*[[${statsRangeTopLabels}]]*/ [];
+        const rangeTopValues = /*[[${statsRangeTopValues}]]*/ [];
+        const categoryLabels = /*[[${statsCategoryLabels}]]*/ [];
+        const categoryValues = /*[[${statsCategoryValues}]]*/ [];
+        const dayLabels = /*[[${statsDayLabels}]]*/ [];
+        const dayValues = /*[[${statsDayValues}]]*/ [];
+        const monthLabels = /*[[${statsMonthLabels}]]*/ [];
+        const monthValues = /*[[${statsMonthValues}]]*/ [];
+        const yearLabels = /*[[${statsYearLabels}]]*/ [];
+        const yearValues = /*[[${statsYearValues}]]*/ [];
+        const monthlyGrowthLabels = /*[[${statsMonthlyGrowthLabels}]]*/ [];
+        const monthlyGrowthPercentValues = /*[[${statsMonthlyGrowthPercentValues}]]*/ [];
+
+        const toNumbers = (values) => (values || []).map((value) => Number(value || 0));
+
+        const renderBarChart = (canvasId, labels, values, title, color) => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: title,
+                        data: toNumbers(values),
+                        backgroundColor: color,
+                        borderRadius: 8,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: (value) => Number(value).toLocaleString('vi-VN') + 'đ'
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderLineChart = (canvasId, labels, values, title) => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: title,
+                        data: toNumbers(values),
+                        borderColor: '#1f8ceb',
+                        backgroundColor: 'rgba(31, 140, 235, 0.2)',
+                        tension: 0.25,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: (value) => Number(value).toLocaleString('vi-VN') + 'đ'
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderPercentLineChart = (canvasId, labels, values, title) => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: title,
+                        data: toNumbers(values),
+                        borderColor: '#34b27b',
+                        backgroundColor: 'rgba(52, 178, 123, 0.2)',
+                        tension: 0.25,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: (value) => Number(value).toLocaleString('vi-VN') + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderDoughnutChart = (canvasId, labels, values) => {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: toNumbers(values),
+                        backgroundColor: ['#ff7a59', '#1f8ceb', '#34b27b', '#f2b54a', '#8b5cf6', '#0fa3a1', '#ef476f', '#6c7a89']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        };
+
+        renderLineChart('statsRevenueTrendChart', revenueLabels, revenueValues, 'Doanh thu');
+        renderPercentLineChart('statsMonthlyGrowthChart', monthlyGrowthLabels, monthlyGrowthPercentValues, 'Tăng trưởng (%)');
+        renderBarChart('statsTopProductRangeChart', rangeTopLabels, rangeTopValues, 'Doanh thu', '#ff7a59');
+        renderDoughnutChart('statsCategoryRevenueChart', categoryLabels, categoryValues);
+        renderBarChart('statsTopDayChart', dayLabels, dayValues, 'Theo ngay', '#1f8ceb');
+        renderBarChart('statsTopMonthChart', monthLabels, monthValues, 'Theo thang', '#34b27b');
+        renderBarChart('statsTopYearChart', yearLabels, yearValues, 'Theo nam', '#f2b54a');
+    });
+</script>
+
+<footer th:replace="~{fragments/site-footer :: siteFooter}"></footer>
+</body>
+</html>

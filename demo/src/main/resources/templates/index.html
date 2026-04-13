@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${siteDisplayName + ' - Thời trang trẻ em đáng yêu'}">MiniWear Kids - Thời trang trẻ em đáng yêu</title>
+    <meta name="description" th:attr="content=${siteDisplayName + ' - Quần áo trẻ em chất lượng, dễ thương, giá hợp lý. Miễn phí vận chuyển đơn từ 399.000đ.'}" content="MiniWear Kids - Quần áo trẻ em chất lượng, dễ thương, giá hợp lý. Miễn phí vận chuyển đơn từ 399.000đ.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+</head>
+<body class="home-page">
+<header th:replace="~{fragments/site-header :: siteHeader}"></header>
+
+<main class="pb-5">
+    <div class="container pt-4" th:if="${successMessage}">
+        <div class="alert alert-success border-0 rounded-4 mb-0" th:text="${successMessage}"></div>
+    </div>
+    <div class="container pt-2" th:if="${adminError}">
+        <div class="alert alert-danger border-0 rounded-4 mb-0" th:text="${adminError}"></div>
+    </div>
+
+    <!-- Admin Edit Mode Toggle -->
+    <div th:if="${isAdmin}" class="container pt-3">
+        <button class="btn btn-outline-warning btn-sm rounded-pill px-3" id="editModeToggle" onclick="toggleEditMode()">
+            <i class="bi bi-pencil-square me-1"></i> <span id="editModeLabel">Bật chế độ chỉnh sửa</span>
+        </button>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="container pt-4">
+        <div class="hero-shell">
+            <div class="hero-copy">
+                <span class="hero-pill"><i class="bi bi-stars"></i> <span th:text="${siteSettings != null && siteSettings.heroBadgeText != null && !siteSettings.heroBadgeText.isBlank() ? siteSettings.heroBadgeText : 'BỘ SƯU TẬP THÁNG 3'}">BỘ SƯU TẬP THÁNG 3</span></span>
+                <h1 th:text="${siteSettings != null && siteSettings.heroTitle != null && !siteSettings.heroTitle.isBlank() ? siteSettings.heroTitle : 'Quần áo trẻ em dễ thương, dễ mặc, dễ mua'}">Quần áo trẻ em dễ thương, dễ mặc, dễ mua</h1>
+                <p th:text="${siteSettings != null && siteSettings.heroDescription != null && !siteSettings.heroDescription.isBlank() ? siteSettings.heroDescription : 'MiniWear Kids tập trung vào chất liệu mềm, thiết kế gọn gàng và giá hợp lý để bé mặc thoải mái mỗi ngày.'}">MiniWear Kids tập trung vào chất liệu mềm, thiết kế gọn gàng và giá hợp lý để bé mặc thoải mái mỗi ngày.</p>
+                <div class="hero-actions">
+                    <a th:href="${siteSettings != null && siteSettings.heroPrimaryButtonUrl != null && !siteSettings.heroPrimaryButtonUrl.isBlank() ? siteSettings.heroPrimaryButtonUrl : '/shop'}" class="btn btn-main"><i class="bi bi-shop me-1"></i> <span th:text="${siteSettings != null && siteSettings.heroPrimaryButtonText != null && !siteSettings.heroPrimaryButtonText.isBlank() ? siteSettings.heroPrimaryButtonText : 'Xem cửa hàng'}">Xem cửa hàng</span></a>
+                    <a th:href="${siteSettings != null && siteSettings.heroSecondaryButtonUrl != null && !siteSettings.heroSecondaryButtonUrl.isBlank() ? siteSettings.heroSecondaryButtonUrl : '#best-seller'}" class="btn btn-outline-main" th:text="${siteSettings != null && siteSettings.heroSecondaryButtonText != null && !siteSettings.heroSecondaryButtonText.isBlank() ? siteSettings.heroSecondaryButtonText : 'Sản phẩm bán chạy'}">Sản phẩm bán chạy</a>
+                </div>
+                <div class="hero-stats">
+                    <div>
+                        <strong th:text="${siteSettings != null && siteSettings.heroStat1Value != null && !siteSettings.heroStat1Value.isBlank() ? siteSettings.heroStat1Value : '2.000+'}">2.000+</strong>
+                        <span th:text="${siteSettings != null && siteSettings.heroStat1Label != null && !siteSettings.heroStat1Label.isBlank() ? siteSettings.heroStat1Label : 'Đơn đã giao'}">Đơn đã giao</span>
+                    </div>
+                    <div>
+                        <strong th:text="${siteSettings != null && siteSettings.heroStat2Value != null && !siteSettings.heroStat2Value.isBlank() ? siteSettings.heroStat2Value : '4.9/5'}">4.9/5</strong>
+                        <span th:text="${siteSettings != null && siteSettings.heroStat2Label != null && !siteSettings.heroStat2Label.isBlank() ? siteSettings.heroStat2Label : 'Điểm đánh giá'}">Điểm đánh giá</span>
+                    </div>
+                    <div>
+                        <strong th:text="${siteSettings != null && siteSettings.heroStat3Value != null && !siteSettings.heroStat3Value.isBlank() ? siteSettings.heroStat3Value : '48h'}">48h</strong>
+                        <span th:text="${siteSettings != null && siteSettings.heroStat3Label != null && !siteSettings.heroStat3Label.isBlank() ? siteSettings.heroStat3Label : 'Đổi trả linh hoạt'}">Đổi trả linh hoạt</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Banner Slider -->
+            <div id="homeBannerSlider" class="carousel slide banner-slider" data-bs-ride="carousel" data-bs-interval="3500">
+                <div class="carousel-indicators" th:if="${banners != null && banners.size() > 1}">
+                    <button th:each="banner, status : ${banners}" type="button" data-bs-target="#homeBannerSlider"
+                            th:data-bs-slide-to="${status.index}" th:classappend="${status.first} ? 'active' : ''"
+                            th:aria-current="${status.first} ? 'true' : 'false'" th:aria-label="'Slide ' + ${status.count}"></button>
+                </div>
+                <div class="carousel-inner">
+                    <div th:each="banner, status : ${banners}" class="carousel-item" th:classappend="${status.first} ? ' active' : ''">
+                        <img th:src="${banner.imagePath}" th:alt="${banner.altText ?: 'Banner'}">
+                    </div>
+                    <!-- Fallback if no banners in DB -->
+                    <div th:if="${banners == null || banners.isEmpty()}" class="carousel-item active">
+                        <img th:src="@{/assets/sales/sale1.webp}" alt="Khuyến mãi thời trang trẻ em">
+                    </div>
+                    <div th:if="${banners == null || banners.isEmpty()}" class="carousel-item">
+                        <img th:src="@{/assets/sales/sale2.webp}" alt="Sản phẩm nổi bật cho bé">
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeBannerSlider" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Trước</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#homeBannerSlider" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Sau</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Edit Mode Panel -->
+    <section class="container mt-3" id="adminEditPanel" style="display:none;" th:if="${isAdmin}">
+        <div class="surface-card p-4" style="border: 2px dashed #f59e0b; background: #fffbeb;">
+            <h5 class="mb-3 text-warning"><i class="bi bi-gear-fill"></i> Chế độ chỉnh sửa trang chủ</h5>
+
+            <!-- Banner Management -->
+            <div class="mb-4">
+                <h6 class="fw-bold"><i class="bi bi-images"></i> Quản lý Banner</h6>
+                <div class="table-responsive mb-3" th:if="${allBanners != null && !allBanners.isEmpty()}">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Ảnh</th><th>Mô tả</th><th>Thứ tự</th><th></th></tr></thead>
+                        <tbody id="bannerTableBody">
+                        <tr th:each="b : ${allBanners}" th:data-id="${b.id}">
+                            <td>
+                                <i class="bi bi-grip-vertical text-muted me-2" style="cursor: grab;" title="Kéo để sắp xếp"></i>
+                                <img th:src="${b.imagePath}" style="height:48px;border-radius:.5rem;" alt="">
+                            </td>
+                            <td th:text="${b.altText ?: '---'}">---</td>
+                            <td class="display-order-cell" th:text="${b.displayOrder}">0</td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" th:data-bs-target="${'#editBannerModal-' + b.id}">Sửa</button>
+                                    <form th:action="@{/admin/banners/delete}" method="post" class="d-inline" onsubmit="return confirm('Xóa banner này?');">
+                                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                        <input type="hidden" name="bannerId" th:value="${b.id}">
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <form id="bannerReorderForm" th:action="@{/admin/banners/reorder}" method="post" class="d-none">
+                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                    <div id="bannerOrderInputs"></div>
+                </form>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" th:if="${allBanners != null && !allBanners.isEmpty()}">
+                    <small class="text-muted">Kéo thả banner để thay đổi thứ tự, sau đó bấm Lưu thứ tự.</small>
+                    <button type="submit" form="bannerReorderForm" class="btn btn-warning btn-sm d-none" id="saveBannerOrderBtn">
+                        <i class="bi bi-save me-1"></i> Lưu thứ tự
+                    </button>
+                </div>
+                <form th:action="@{/admin/banners/save}" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                    <div class="col-md-4"><label class="form-label form-label-sm">Ảnh banner</label><input type="file" name="imageFile" class="form-control form-control-sm" accept="image/*" required></div>
+                    <div class="col-md-3"><label class="form-label form-label-sm">Mô tả</label><input type="text" name="altText" class="form-control form-control-sm" placeholder="Banner mùa hè..."></div>
+                    <div class="col-md-2"><label class="form-label form-label-sm">Link</label><input type="text" name="linkUrl" class="form-control form-control-sm" placeholder="/shop"></div>
+                    <div class="col-md-1"><label class="form-label form-label-sm">STT</label><input type="number" name="displayOrder" class="form-control form-control-sm" value="0"></div>
+                    <div class="col-md-2"><button type="submit" class="btn btn-warning btn-sm w-100"><i class="bi bi-plus-lg"></i> Thêm</button></div>
+                </form>
+
+                <div class="modal fade" th:each="b : ${allBanners}" th:id="${'editBannerModal-' + b.id}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Sửa banner</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form th:action="@{/admin/banners/save}" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                                <input type="hidden" name="bannerId" th:value="${b.id}">
+                                <div class="modal-body text-start">
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label fw-bold">Ảnh hiện tại</label>
+                                            <div class="surface-card p-2 text-center">
+                                                <img th:src="${b.imagePath}" alt="Banner" class="img-fluid rounded-3" style="max-height:180px;object-fit:cover;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-7">
+                                            <label class="form-label fw-bold">Tải ảnh mới</label>
+                                            <input type="file" name="imageFile" class="form-control" accept="image/*">
+                                            <small class="text-muted d-block mt-1">Bỏ trống nếu muốn giữ ảnh cũ.</small>
+                                            <label class="form-label fw-bold mt-3">Mô tả</label>
+                                            <input type="text" name="altText" class="form-control" th:value="${b.altText}" placeholder="Mô tả banner...">
+                                            <label class="form-label fw-bold mt-3">Link</label>
+                                            <input type="text" name="linkUrl" class="form-control" th:value="${b.linkUrl}" placeholder="/shop">
+                                            <label class="form-label fw-bold mt-3">Thứ tự</label>
+                                            <input type="number" name="displayOrder" class="form-control" th:value="${b.displayOrder}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-main">Lưu banner</button></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Sale Time -->
+            <div>
+                <h6 class="fw-bold"><i class="bi bi-lightning-charge-fill text-danger"></i> Thời gian Flash Sale</h6>
+                <div class="d-flex align-items-end flex-wrap gap-3">
+                    <form th:action="@{/admin/flash-sale/update}" method="post" class="row g-2 align-items-end m-0">
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <div class="col-auto"><label class="form-label form-label-sm">Thời gian kết thúc mới</label><input type="datetime-local" name="endTime" class="form-control form-control-sm" required></div>
+                        <div class="col-auto"><button type="submit" class="btn btn-danger btn-sm">Gia hạn</button></div>
+                    </form>
+                    <form th:action="@{/admin/flash-sale/disable}" method="post" class="m-0" onsubmit="return confirm('Tắt Flash Sale sẽ ẩn toàn bộ mục Flash sale?');">
+                        <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                        <button th:if="${siteSettings.flashSaleEnabled}" type="submit" class="btn btn-outline-secondary btn-sm mb-1 pb-1">Tắt Sale</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Site Settings -->
+            <div class="mt-4">
+                <h6 class="fw-bold"><i class="bi bi-building-gear"></i> Thông tin cửa hàng, Hero và Footer</h6>
+                <form th:action="@{/admin/site-settings/save}" method="post" enctype="multipart/form-data" class="row g-3">
+                    <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Tên shop</label>
+                        <input type="text" name="shopName" class="form-control form-control-sm" th:value="${siteSettings.shopName}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Logo mới</label>
+                        <input type="file" name="logoFile" class="form-control form-control-sm" accept="image/*">
+                        <small class="text-muted d-block mt-1">Để trống nếu giữ logo hiện tại.</small>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label form-label-sm">Footer text</label>
+                        <textarea name="footerText" class="form-control form-control-sm" rows="2" th:text="${siteSettings.footerText}"></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Số điện thoại Footer</label>
+                        <input type="text" name="footerPhone" class="form-control form-control-sm" th:value="${siteSettings.footerPhone}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Địa chỉ Footer</label>
+                        <input type="text" name="footerAddress" class="form-control form-control-sm" th:value="${siteSettings.footerAddress}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Dòng vận chuyển Footer</label>
+                        <input type="text" name="footerShippingText" class="form-control form-control-sm" th:value="${siteSettings.footerShippingText}">
+                    </div>
+                    <div class="col-12"><hr class="my-1"></div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Hero pill</label>
+                        <input type="text" name="heroBadgeText" class="form-control form-control-sm" th:value="${siteSettings.heroBadgeText}">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label form-label-sm">Hero tiêu đề</label>
+                        <input type="text" name="heroTitle" class="form-control form-control-sm" th:value="${siteSettings.heroTitle}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label form-label-sm">Hero mô tả</label>
+                        <textarea name="heroDescription" class="form-control form-control-sm" rows="2" th:text="${siteSettings.heroDescription}"></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Nút chính - chữ</label>
+                        <input type="text" name="heroPrimaryButtonText" class="form-control form-control-sm" th:value="${siteSettings.heroPrimaryButtonText}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Nút chính - link</label>
+                        <input type="text" name="heroPrimaryButtonUrl" class="form-control form-control-sm" th:value="${siteSettings.heroPrimaryButtonUrl}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Nút phụ - chữ</label>
+                        <input type="text" name="heroSecondaryButtonText" class="form-control form-control-sm" th:value="${siteSettings.heroSecondaryButtonText}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Nút phụ - link</label>
+                        <input type="text" name="heroSecondaryButtonUrl" class="form-control form-control-sm" th:value="${siteSettings.heroSecondaryButtonUrl}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 1 - giá trị</label>
+                        <input type="text" name="heroStat1Value" class="form-control form-control-sm" th:value="${siteSettings.heroStat1Value}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 1 - nhãn</label>
+                        <input type="text" name="heroStat1Label" class="form-control form-control-sm" th:value="${siteSettings.heroStat1Label}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 2 - giá trị</label>
+                        <input type="text" name="heroStat2Value" class="form-control form-control-sm" th:value="${siteSettings.heroStat2Value}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 2 - nhãn</label>
+                        <input type="text" name="heroStat2Label" class="form-control form-control-sm" th:value="${siteSettings.heroStat2Label}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 3 - giá trị</label>
+                        <input type="text" name="heroStat3Value" class="form-control form-control-sm" th:value="${siteSettings.heroStat3Value}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Stat 3 - nhãn</label>
+                        <input type="text" name="heroStat3Label" class="form-control form-control-sm" th:value="${siteSettings.heroStat3Label}">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-main btn-sm"><i class="bi bi-save me-1"></i> Lưu thông tin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Collections -->
+    <section id="collections" class="container mt-4">
+        <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker">Bộ sưu tập</div>
+                    <h2 class="section-title mb-0">Mua nhanh theo nhu cầu của bé</h2>
+                </div>
+                <a th:href="@{/shop}" class="link-more">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="collection-grid">
+                <a th:each="cat : ${categories}" th:href="@{/shop(categoryName=${cat.name})}" class="collection-item">
+                    <i th:if="${cat.icon != null && cat.icon.startsWith('bi-')}" th:class="'bi ' + ${cat.icon}"></i>
+                    <img th:if="${cat.icon != null && !cat.icon.startsWith('bi-')}" th:src="${cat.icon}" style="width:32px;height:32px;object-fit:contain;" alt="">
+                    <h6 th:text="${cat.name}">Danh mục</h6>
+                    <p th:text="${cat.description}">Mô tả</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Flash Sale Section -->
+    <section id="flash-sale" class="container mt-4" th:if="${siteSettings.flashSaleEnabled && flashSaleProducts != null && !flashSaleProducts.isEmpty()}">
+        <div class="surface-card p-4 flash-sale-wrap">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 flash-sale-header">
+                <div class="d-flex align-items-center gap-2 gap-md-4">
+                    <h2 class="section-title mb-0 flash-sale-title">
+                        <i class="bi bi-lightning-charge-fill"></i> <span class="blink-text">FLASH SALE</span>
+                    </h2>
+                    <div class="countdown-timer d-flex gap-1 align-items-center" th:data-end-time="${siteSettings.flashSaleEndTime}">
+                        <span class="time-block" id="fs-hours">00</span> <span class="time-sep">:</span>
+                        <span class="time-block" id="fs-mins">00</span> <span class="time-sep">:</span>
+                        <span class="time-block" id="fs-secs">00</span>
+                    </div>
+                </div>
+                <div class="flash-sale-nav d-none d-md-flex gap-2">
+                    <a th:href="@{/shop(flashSale='true')}" class="link-more me-3">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+                    <button class="btn btn-outline-main btn-sm rounded-circle px-2" id="fs-prev"><i class="bi bi-chevron-left"></i></button>
+                    <button class="btn btn-outline-main btn-sm rounded-circle px-2" id="fs-next"><i class="bi bi-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="flash-sale-slider" id="fs-slider">
+                <article class="product-card fs-product-card" th:each="product : ${flashSaleProducts}">
+                    <a th:href="@{/product/{id}(id=${product.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                            <span class="product-discount flash-discount" th:if="${product.activeDiscountPercent > 0}" th:text="'-' + ${product.activeDiscountPercent} + '%'">-50%</span>
+                        </div>
+                    </a>
+                    <div class="product-body text-center p-3 pb-2">
+                        <h6 class="product-name mb-1" th:text="${product.name}">Tên sản phẩm</h6>
+                        <strong class="product-price fs-price text-danger" th:text="${product.formattedActivePrice}">99.000đ</strong>
+                        <del class="product-original-price d-inline-block opacity-50 mb-1" th:if="${product.formattedOriginalPrice != null}" th:text="${product.formattedOriginalPrice}">150.000đ</del>
+                        <div class="fs-progress-wrap mt-1">
+                            <div class="fs-progress-bar" th:style="'width: ' + (${product.flashSaleLimit > 0 ? (product.flashSaleSold * 100 / product.flashSaleLimit) : 0}) + '%'"></div>
+                            <span class="fs-progress-text" th:text="'Đã bán ' + ${product.flashSaleSold}">Đã bán 5</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newest Products -->
+    <section id="newest" class="container mt-4" th:if="${newestProducts != null && !newestProducts.isEmpty()}">
+        <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker"><i class="bi bi-stars"></i> Mới về</div>
+                    <h2 class="section-title mb-0">Sản phẩm mới ra mắt</h2>
+                </div>
+                <a th:href="@{/shop}" class="link-more">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="product-grid">
+                <article class="product-card" th:each="product : ${newestProducts}">
+                    <a th:href="@{/product/{id}(id=${product.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                            <span class="product-discount" th:if="${product.discountPercent > 0}" th:text="'-' + ${product.discountPercent} + '%'">-20%</span>
+                            <span class="product-badge-sold" th:text="'Mới'">Mới</span>
+                        </div>
+                    </a>
+                    <div class="product-body">
+                        <a th:href="@{/product/{id}(id=${product.id})}" class="product-name-link">
+                            <h6 class="product-name" th:text="${product.name}">Tên sản phẩm</h6>
+                        </a>
+                        <p class="product-desc" th:text="${product.description}">Mô tả</p>
+                        <div class="product-age" th:if="${product.ageRange != null}">
+                            <i class="bi bi-person-Hearts"></i> <span th:text="${product.ageRange}">1-5 tuổi</span>
+                        </div>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price-group">
+                            <strong class="product-price" th:text="${product.formattedPrice}">159.000đ</strong>
+                            <del class="product-original-price" th:if="${product.formattedOriginalPrice != null}" th:text="${product.formattedOriginalPrice}">219.000đ</del>
+                        </div>
+                        <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="m-0 add-to-cart-form">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <button type="submit" class="btn btn-main btn-sm add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus"></i></button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Best Sellers -->
+    <section id="best-seller" class="container mt-4">
+        <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker"><i class="bi bi-fire"></i> Bán chạy</div>
+                    <h2 class="section-title mb-0">Sản phẩm được đặt mua nhiều</h2>
+                </div>
+                <a th:href="@{/shop}" class="link-more">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="product-grid">
+                <article class="product-card" th:each="product : ${bestSellers}">
+                    <a th:href="@{/product/{id}(id=${product.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                            <span class="product-discount" th:if="${product.discountPercent > 0}" th:text="'-' + ${product.discountPercent} + '%'">-20%</span>
+                            <span class="product-badge-sold" th:text="'Đã bán ' + ${product.soldCount}">Đã bán 0</span>
+                        </div>
+                    </a>
+                    <div class="product-body">
+                        <a th:href="@{/product/{id}(id=${product.id})}" class="product-name-link">
+                            <h6 class="product-name" th:text="${product.name}">Tên sản phẩm</h6>
+                        </a>
+                        <p class="product-desc" th:text="${product.description}">Mô tả sản phẩm</p>
+                        <div class="product-age" th:if="${product.ageRange != null}">
+                            <i class="bi bi-person-hearts"></i> <span th:text="${product.ageRange}">1-5 tuổi</span>
+                        </div>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price-group">
+                            <strong class="product-price" th:text="${product.formattedPrice}">159.000đ</strong>
+                            <del class="product-original-price" th:if="${product.formattedOriginalPrice != null}" th:text="${product.formattedOriginalPrice}">219.000đ</del>
+                        </div>
+                        <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="m-0 add-to-cart-form">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <button type="submit" class="btn btn-main btn-sm add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus"></i> Thêm</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured -->
+    <section id="featured" class="container mt-4" th:if="${featuredProducts != null && !featuredProducts.isEmpty()}">
+        <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker"><i class="bi bi-heart-fill"></i> Nổi bật</div>
+                    <h2 class="section-title mb-0">Sản phẩm được yêu thích</h2>
+                </div>
+                <a th:href="@{/shop}" class="link-more">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="product-grid">
+                <article class="product-card" th:each="product : ${featuredProducts}">
+                    <a th:href="@{/product/{id}(id=${product.id})}" class="product-card-link">
+                        <div class="product-img-wrap">
+                            <img th:src="${product.imagePath != null ? product.imagePath : '/assets/sales/sale1.webp'}" th:alt="${product.name}">
+                            <span class="product-featured-badge"><i class="bi bi-star-fill"></i> Nổi bật</span>
+                        </div>
+                    </a>
+                    <div class="product-body">
+                        <a th:href="@{/product/{id}(id=${product.id})}" class="product-name-link">
+                            <h6 class="product-name" th:text="${product.name}">Tên sản phẩm</h6>
+                        </a>
+                        <p class="product-desc" th:text="${product.description}">Mô tả</p>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price-group">
+                            <strong class="product-price" th:text="${product.formattedPrice}">159.000đ</strong>
+                            <del class="product-original-price" th:if="${product.formattedOriginalPrice != null}" th:text="${product.formattedOriginalPrice}">219.000đ</del>
+                        </div>
+                        <form th:action="@{/cart/add}" th:attr="data-ajax-url=@{/cart/add-ajax}" method="post" class="m-0 add-to-cart-form">
+                            <input type="hidden" name="authCsrfToken" th:value="${authCsrfToken}">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <button type="submit" class="btn btn-main btn-sm add-to-cart-btn" data-cart-label="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ hàng"><i class="bi bi-cart-plus"></i> Thêm</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Highlights -->
+    <section id="highlights" class="container mt-4">
+        <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="section-kicker">Điểm nổi bật</div>
+                    <h2 class="section-title mb-0">Mua sắm nhẹ nhàng cho bố mẹ</h2>
+                </div>
+            </div>
+            <div class="highlight-grid">
+                <article><i class="bi bi-patch-check-fill"></i><h6>Chất liệu thân thiện</h6><p>Ưu tiên cotton và chất vải mềm, hạn chế kích ứng da.</p></article>
+                <article><i class="bi bi-truck"></i><h6>Giao hàng nhanh</h6><p>Xử lý đơn trong ngày, hỗ trợ đổi size nhanh gọn.</p></article>
+                <article><i class="bi bi-chat-square-heart-fill"></i><h6>Tư vấn dễ hiểu</h6><p>Gợi ý size theo tuổi và cân nặng để mẹ chọn nhanh.</p></article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Care Guide -->
+    <section id="care-guide" class="container mt-4">
+        <div class="surface-card p-4 care-guide">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div><div class="section-kicker">Hướng dẫn</div><h2 class="section-title mb-0">Chọn size nhanh cho bé</h2></div>
+                <span class="section-note">Mẹo nhỏ để đặt đúng size ngay lần đầu</span>
+            </div>
+            <div class="guide-steps">
+                <div><span>1</span>Đo vòng ngực và chiều cao của bé trước khi đặt.</div>
+                <div><span>2</span>Nếu bé nằm giữa 2 size, ưu tiên size lớn hơn.</div>
+                <div><span>3</span>Chat với shop để được gợi ý size theo từng mẫu.</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/site-footer :: siteFooter}"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/cart-ui.js}"></script>
+<script>
+    function toggleEditMode() {
+        const panel = document.getElementById('adminEditPanel');
+        const label = document.getElementById('editModeLabel');
+        const btn = document.getElementById('editModeToggle');
+        if (!panel) return;
+        const isHidden = panel.style.display === 'none';
+        panel.style.display = isHidden ? 'block' : 'none';
+        label.textContent = isHidden ? 'Tắt chế độ chỉnh sửa' : 'Bật chế độ chỉnh sửa';
+        btn.classList.toggle('btn-warning', isHidden);
+        btn.classList.toggle('btn-outline-warning', !isHidden);
+    }
+
+    if (new URLSearchParams(window.location.search).get('editMode') === 'true') {
+        document.addEventListener('DOMContentLoaded', () => toggleEditMode());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const slider = document.getElementById('fs-slider');
+        const btnNext = document.getElementById('fs-next');
+        const btnPrev = document.getElementById('fs-prev');
+        if (slider && btnNext && btnPrev) {
+            const scrollAmt = () => {
+                const card = slider.querySelector('.fs-product-card');
+                return card ? (card.offsetWidth + 16) * 6 : 300;
+            };
+            btnNext.addEventListener('click', () => slider.scrollBy({ left: scrollAmt(), behavior: 'smooth' }));
+            btnPrev.addEventListener('click', () => slider.scrollBy({ left: -scrollAmt(), behavior: 'smooth' }));
+        }
+
+        const timerEl = document.querySelector('.countdown-timer');
+        if (timerEl) {
+            const endTimeStr = timerEl.getAttribute('data-end-time');
+            if (endTimeStr) {
+                const countDownDate = new Date(endTimeStr).getTime();
+                const hEl = document.getElementById('fs-hours');
+                const mEl = document.getElementById('fs-mins');
+                const sEl = document.getElementById('fs-secs');
+                const flashSaleSection = document.getElementById('flash-sale');
+                const isEditMode = new URLSearchParams(window.location.search).get('editMode') === 'true';
+                const reloadGuardKey = 'flash-sale-expired-reload:' + endTimeStr;
+                let expiredHandled = false;
+
+                const handleFlashSaleExpired = () => {
+                    if (expiredHandled) {
+                        return;
+                    }
+
+                    expiredHandled = true;
+                    hEl.innerText = mEl.innerText = sEl.innerText = '00';
+                    if (flashSaleSection) {
+                        flashSaleSection.classList.add('d-none');
+                    }
+
+                    if (!isEditMode) {
+                        const alreadyReloaded = window.sessionStorage.getItem(reloadGuardKey) === '1';
+                        if (!alreadyReloaded) {
+                            window.sessionStorage.setItem(reloadGuardKey, '1');
+                            window.setTimeout(() => window.location.reload(), 900);
+                        }
+                    }
+                };
+
+                if (!hEl || !mEl || !sEl || Number.isNaN(countDownDate)) {
+                    return;
+                }
+
+                if (countDownDate > new Date().getTime()) {
+                    window.sessionStorage.removeItem(reloadGuardKey);
+                }
+
+                if (countDownDate <= new Date().getTime()) {
+                    handleFlashSaleExpired();
+                    return;
+                }
+
+                const updateTimer = setInterval(() => {
+                    const distance = countDownDate - new Date().getTime();
+                    if (distance <= 0) {
+                        clearInterval(updateTimer);
+                        handleFlashSaleExpired();
+                        return;
+                    }
+
+                    const hours = Math.floor(distance / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    hEl.innerText = hours.toString().padStart(2, '0');
+                    mEl.innerText = minutes.toString().padStart(2, '0');
+                    sEl.innerText = seconds.toString().padStart(2, '0');
+                }, 1000);
+            }
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tbody = document.getElementById('bannerTableBody');
+        const saveButton = document.getElementById('saveBannerOrderBtn');
+        const orderInputs = document.getElementById('bannerOrderInputs');
+        const reorderForm = document.getElementById('bannerReorderForm');
+        let bannerOrderDirty = false;
+
+        const syncBannerOrder = (markDirty = false) => {
+            if (!tbody || !orderInputs || !reorderForm) return;
+            orderInputs.innerHTML = '';
+            Array.from(tbody.children).forEach((tr, index) => {
+                const id = tr.getAttribute('data-id');
+                const orderCell = tr.querySelector('.display-order-cell');
+                if (orderCell) {
+                    orderCell.textContent = index + 1;
+                }
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'bannerIds';
+                hidden.value = id;
+                orderInputs.appendChild(hidden);
+            });
+            bannerOrderDirty = markDirty || bannerOrderDirty;
+            if (saveButton) {
+                saveButton.classList.toggle('d-none', !bannerOrderDirty);
+            }
+        };
+
+        if (tbody && window.Sortable) {
+            new Sortable(tbody, {
+                animation: 150,
+                handle: 'i.bi-grip-vertical',
+                onEnd: function (evt) {
+                    syncBannerOrder(true);
+                }
+            });
+            syncBannerOrder(false);
+        }
+    });
+</script>
+</body>
+</html>

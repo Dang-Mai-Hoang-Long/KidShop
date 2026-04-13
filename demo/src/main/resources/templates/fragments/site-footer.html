@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="siteFooter" class="site-footer mt-5">
+    <div class="container">
+        <div class="footer-card">
+            <div class="footer-brand">
+                <h5 th:text="${siteDisplayName}">MiniWear Kids</h5>
+                <p class="mb-0" th:text="${siteSettings != null && siteSettings.footerText != null ? siteSettings.footerText : 'Quần áo trẻ em đơn giản, dễ mặc, giá hợp lý.'}">Quần áo trẻ em đơn giản, dễ mặc, giá hợp lý.</p>
+            </div>
+            <div class="footer-meta">
+                <span><i class="bi bi-telephone-fill"></i> <span th:text="${siteSettings != null && siteSettings.footerPhone != null && !siteSettings.footerPhone.isBlank() ? siteSettings.footerPhone : '0901 234 567'}">0901 234 567</span></span>
+                <span><i class="bi bi-geo-alt-fill"></i> <span th:text="${siteSettings != null && siteSettings.footerAddress != null && !siteSettings.footerAddress.isBlank() ? siteSettings.footerAddress : 'Ho Chi Minh City'}">Ho Chi Minh City</span></span>
+                <span><i class="bi bi-truck"></i> <span th:text="${siteSettings != null && siteSettings.footerShippingText != null && !siteSettings.footerShippingText.isBlank() ? siteSettings.footerShippingText : 'Giao nhanh toàn quốc'}">Giao nhanh toàn quốc</span></span>
+            </div>
+            <p class="mb-0 footer-copy" th:text="${'© 2026 ' + siteDisplayName + '. All rights reserved.'}">© 2026 MiniWear Kids. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+</body>
+</html>
